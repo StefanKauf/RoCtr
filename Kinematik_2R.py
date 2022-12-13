@@ -10,14 +10,14 @@ import sympy as  sym
 ######## ***************************************  
 ## 1. Transformation 2R Kette
 ######## ***************************************  
-q1,q2,ai,a1,a2,di,d1,d2,alpha,alpha1,alpha2 = sym.symbols("q1 q2 ai a1 a2 di d1 d2 alpha alpha1 alpha2")
+q1,q2,ai,a1,a2,di,d1,d2,alpha,alpha1,alpha2,l_s1,l_s2,l1,l2= sym.symbols("q1 q2 ai a1 a2 di d1 d2 alpha alpha1 alpha2 l_s1 l_s2 l1 l2")
 
 ## For nice looking equations
 sym.init_printing()
 
 
 D = sym.Matrix([[1, 0, 0, 0],[ai, 1, 0, 0],[0, 0, sym.cos(alpha), -sym.sin(alpha)],[di, 0, sym.sin(alpha), sym.cos(alpha)]])
-
+q = sym.Matrix([q1,q2])
 
 M1 = sym.Matrix([[1, 0, 0, 0],[0,  sym.cos(q1),-sym.sin(q1),0],[0,sym.sin(q1), sym.cos(q1), 0],[0, 0, 0, 1]])
 G1 = sym.Matrix([[1, 0, 0, 0],[a1, 1, 0, 0],[0, 0, sym.cos(alpha1),-sym.sin(alpha1)],[d1, 0, sym.sin(alpha1), sym.cos(alpha1)]])
@@ -31,13 +31,94 @@ T01 = M1*G1
 ## 2. Aufstellen der Jacobimatrix
 ######## ***************************************  
 
-
-T2 = T02.subs({a1:3,a2:0,alpha1:sym.pi/6, alpha2:0,d1:1,d2:0,q1:sym.pi/3,q2:sym.pi/4})
-x0 = sym.Matrix([1, 0, 0, 0])    # 1 ... ist für die Homogenisierung
-
-x1 = T2*x0
+# Geschwindigkeit in x,y Richtung
+Jv_01 = T01[1:3,0].jacobian(q)
+Jv_02 = T02[1:3,0].jacobian(q)    # 1:3  --> Jacobimatrix bis zur 2ten Dimension, 1 Zeile ist die homogenisierung
 
 
+# Rotationsgeshwindigkeit
+
+Jw_01 = M1*sym.Matrix([0, 0, 0, 1])+M1[:,0]
+Jw_02 = Jw_01.row_join(T01*sym.Matrix([0, 0, 0, 1]))
+Jw_01 = Jw_01.row_join(sym.Matrix([0,0,0,0]))
+
+# erste Zeile Löschen
+Jw_01 = Jw_01[1:4,:]
+Jw_02 = Jw_02[1:4,:]
 
 
 
+
+
+# Substitueren mit den Parametern
+
+Jv_1 = Jv_01.subs({a1:l_s1,alpha1:0,d1:0})
+Jv_2 = Jv_02.subs({a1:l1,a2:l_s2,alpha1:0, alpha2:0,d1:0,d2:0})
+
+Jw_1 = Jw_01.subs({a1:l_s1,alpha1:0,d1:0})
+Jw_2 = Jw_02.subs({a1:l1,a2:l_s2,alpha1:0, alpha2:0,d1:0,d2:0})
+
+
+
+
+######## ***************************************  
+## 3. Aufstellen der D-Matrix
+######## ***************************************  
+
+m1,m2,J1,J2,B1,B2,R1,R2,km1,km2,kb1,kb2,r1,r2 =sym.symbols("m1 m2 J1 J2 B1 B2 R1 R2 km1 km2 kb1 kb2 r1 r2")
+
+D = m1*Jv_1.T*Jv_1 + Jw_1.T*J1*Jw_1 + m2*Jv_2.T*Jv_2 + Jw_2.T*J2*Jw_2 
+#sym.simplify(D)
+
+######## ***************************************  
+## 4. Aufstellen der C-Matrix
+######## ***************************************  
+
+qd1, qd2, qdd1, qdd2 = sym.symbols("qd1 qd2 qdd1 qdd2")
+qd = sym.Matrix([qd1,qd2])
+qdd = sym.Matrix([qdd1,qdd2])
+
+c = sym.MutableDenseNDimArray(np.zeros((2,)*3))
+
+n = 2
+for i in range(n):
+    for j in range(n):
+        for k in range(n):            
+            c[i,j,k] = 1/2*(sym.diff(D[k,j],q[i])+ sym.diff(D[k,i],q[j]) - sym.diff(D[i,j],q[k]) )
+           
+
+
+C = sym.zeros(n,n)
+
+for i in range(n):
+    for k in range(n):
+        for j in range(n):
+            C[k,i] = C[k,i] + c[i,j,k]*qd[j]
+        
+    
+#sym.simplify(C)
+
+######## ***************************************  
+## 5. Aufstellen der g-Vektors  --> potentielle Energie
+######## ***************************************  
+g = sym.symbols("g")
+
+T01s = T01.subs({a1:l_s1,alpha1:0,d1:0})
+T02s = T02.subs({a1:l1,a2:l_s2,alpha1:0, alpha2:0,d1:0,d2:0})
+
+# Potentielle Energie
+P = sym.Matrix([0, 0, g, 0]).T*T01s[:,0]*m1 + sym.Matrix([0, 0, g, 0]).T*T02s[:,0]*m2
+
+gv = P.jacobian(q)
+
+
+######## ***************************************  
+## 6. Erweitertes Modell
+######## ***************************************  
+u1,u2 = sym.symbols("u1 u2")
+
+J = sym.Matrix([[J1*r1**2, 0],[0, J2*r2**2]])
+B = sym.Matrix([[r1**2*B1+km1*kb1/R1, 0],[0, B2*r2**2+km2*kb2/R2]])
+R = sym.Matrix([[R1, 0],[0, R2]])
+
+tau = sym.Matrix([r1*km1/R1*u1, r2*km2/R2*u2])
