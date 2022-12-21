@@ -5,17 +5,21 @@
 ## Bib
 import numpy as np
 import sympy as  sym
+from sympy.physics.vector import dynamicsymbols
+import Parameter as param
+
 
 
 ######## ***************************************  
 ## 1. Transformation 2R Kette
 ######## ***************************************  
-q1,q2,ai,a1,a2,di,d1,d2,alpha,alpha1,alpha2,l_s1,l_s2,l1,l2= sym.symbols("q1 q2 ai a1 a2 di d1 d2 alpha alpha1 alpha2 l_s1 l_s2 l1 l2")
+q1,q2 = dynamicsymbols("q1 q2")
+t,ai,a1,a2,di,d1,d2,alpha,alpha1,alpha2,l_s1,l_s2,l1,l2= sym.symbols("t ai a1 a2 di d1 d2 alpha alpha1 alpha2 l_s1 l_s2 l1 l2")
 
 ## For nice looking equations
 sym.init_printing()
 
-
+ 
 D = sym.Matrix([[1, 0, 0, 0],[ai, 1, 0, 0],[0, 0, sym.cos(alpha), -sym.sin(alpha)],[di, 0, sym.sin(alpha), sym.cos(alpha)]])
 q = sym.Matrix([q1,q2])
 
@@ -65,9 +69,9 @@ Jw_2 = Jw_02.subs({a1:l1,a2:l_s2,alpha1:0, alpha2:0,d1:0,d2:0})
 ## 3. Aufstellen der D-Matrix
 ######## ***************************************  
 
-m1,m2,J1,J2,B1,B2,R1,R2,km1,km2,kb1,kb2,r1,r2 =sym.symbols("m1 m2 J1 J2 B1 B2 R1 R2 km1 km2 kb1 kb2 r1 r2")
+m1,m2,I1,I2,J1,J2,B1,B2,R1,R2,km1,km2,kb1,kb2,r1,r2 =sym.symbols("m1 m2 I1 I2 J1 J2 B1 B2 R1 R2 km1 km2 kb1 kb2 r1 r2")
 
-D = m1*Jv_1.T*Jv_1 + Jw_1.T*J1*Jw_1 + m2*Jv_2.T*Jv_2 + Jw_2.T*J2*Jw_2 
+D = m1*Jv_1.T*Jv_1 + Jw_1.T*I1*Jw_1 + m2*Jv_2.T*Jv_2 + Jw_2.T*I2*Jw_2 
 #sym.simplify(D)
 
 ######## ***************************************  
@@ -77,6 +81,8 @@ D = m1*Jv_1.T*Jv_1 + Jw_1.T*J1*Jw_1 + m2*Jv_2.T*Jv_2 + Jw_2.T*J2*Jw_2
 qd1, qd2, qdd1, qdd2 = sym.symbols("qd1 qd2 qdd1 qdd2")
 qd = sym.Matrix([qd1,qd2])
 qdd = sym.Matrix([qdd1,qdd2])
+#qd = sym.diff(q,t)
+#qdd = sym.diff(qd,t)
 
 c = sym.MutableDenseNDimArray(np.zeros((2,)*3))
 
@@ -112,13 +118,44 @@ P = sym.Matrix([0, 0, g, 0]).T*T01s[:,0]*m1 + sym.Matrix([0, 0, g, 0]).T*T02s[:,
 gv = P.jacobian(q)
 
 
+
 ######## ***************************************  
-## 6. Erweitertes Modell
+## 6. Bewegungsgleichung einfaches Modell
 ######## ***************************************  
 u1,u2 = sym.symbols("u1 u2")
 
+# tau = D*qdd + C*qd + gv
+qdd_Modell = sym.Function('qdd_modell')(qd1,qd2,q1,q2,u1,u2)
+
+qdd_modell = sym.simplify(D.inv()*(C*qd+gv.T))
+
+
+######## ***************************************  
+## 7. Erweitertes Modell
+######## ***************************************  
+
 J = sym.Matrix([[J1*r1**2, 0],[0, J2*r2**2]])
-B = sym.Matrix([[r1**2*B1+km1*kb1/R1, 0],[0, B2*r2**2+km2*kb2/R2]])
-R = sym.Matrix([[R1, 0],[0, R2]])
+B = sym.Matrix([[r1**2*B1, 0],[0, B2*r2**2]])
+R = sym.Matrix([[km1*kb1/R1, 0],[0, km2*kb2/R2]])
 
 tau = sym.Matrix([r1*km1/R1*u1, r2*km2/R2*u2])
+
+# tau = (D+J)qdd + (C+B+R)qd +gv
+M = C+J
+qdd_ext = M.inv()*((C+B+R)*qd + gv.T)
+
+
+######## ***************************************  
+## 8.  Einsetzen der Parameter
+######## ***************************************  
+
+
+
+qdd_modell_subs = sym.simplify(qdd_modell.subs({l1:param.l1,l2:param.l2,I1:param.I1,I2:param.I2,m1:param.m1,m2:param.m2,l_s1:param.l_s1,l_s2:param.l_s2,g:param.g,J1:param.J1,J2:param.J2, B1:param.B1, B2:param.B2,R1:param.R1,R2:param.R2,r1:param.r1,r2:param.r2,km1:param.km1,km2:param.km2,kb1:param.kb1,kb2:param.kb2}))
+f_modell = sym.lambdify([qd1, qd2,q1,q2,u1,u2], qdd_modell_subs)
+
+qdd_ext_subs = sym.simplify(qdd_ext.subs({l1:param.l1,l2:param.l2,I1:param.I1,I2:param.I2,m1:param.m1,m2:param.m2,l_s1:param.l_s1,l_s2:param.l_s2,g:param.g,J1:param.J1,J2:param.J2, B1:param.B1, B2:param.B2,R1:param.R1,R2:param.R2,r1:param.r1,r2:param.r2,km1:param.km1,km2:param.km2,kb1:param.kb1,kb2:param.kb2}))
+f_modell_ext = sym.lambdify([qd1, qd2,q1,q2,u1,u2], qdd_ext_subs)
+
+
+
