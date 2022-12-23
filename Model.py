@@ -5,13 +5,14 @@ Author: Kaufmann Stefan
 verschiedene 2R Robotermodelle  
 """
 
-from Kinematik_2R import *
+#from Kinematik_2R import *
+from numpy import sin,cos
+from Parameter import *
+import copy as cp
+from Kinematik_2R import f_modell, f_modell_ext
 
 
-
-
-
-def model_nlin(x,t,u=[0,0]):
+def model_nlin(t,x,u=[0,0]):
     """ Nonlinear System Model
         Params
          --------
@@ -43,17 +44,16 @@ def model_nlin(x,t,u=[0,0]):
 
 
     dx[0] = x[1]
-    dx[1] = qdd[0]
-    dx[2] = x[3]
+    dx[1] = qdd[0]    
+    dx[2] = x[3]    
     dx[3] = qdd[1]
 
 
 
     return dx
 
-
     
-def model_nlin_ext(x,t,u=[0,0]):
+def model_nlin_ext(t,x,u=[0,0]):
     """ Extendend Nonlinear System Model
         Params
          --------

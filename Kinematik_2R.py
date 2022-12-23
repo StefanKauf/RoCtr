@@ -16,7 +16,7 @@ import Parameter as param
 q1,q2,ai,a1,a2,di,d1,d2,alpha,alpha1,alpha2,l_s1,l_s2,l1,l2= sym.symbols("q1 q2 ai a1 a2 di d1 d2 alpha alpha1 alpha2 l_s1 l_s2 l1 l2")
 
 ## For nice looking equations
-sym.init_printing()
+#sym.init_printing()
 
  
 D = sym.Matrix([[1, 0, 0, 0],[ai, 1, 0, 0],[0, 0, sym.cos(alpha), -sym.sin(alpha)],[di, 0, sym.sin(alpha), sym.cos(alpha)]])
@@ -121,11 +121,11 @@ gv = P.jacobian(q)
 ## 6. Bewegungsgleichung einfaches Modell
 ######## ***************************************  
 u1,u2 = sym.symbols("u1 u2")
-
-# tau = D*qdd + C*qd + gv
+tau = sym.Matrix([u1,u2])
+#tau = D*qdd + C*qd + gv
 qdd_Modell = sym.Function('qdd_modell')(qd1,qd2,q1,q2,u1,u2)
 
-qdd_modell = sym.simplify(D.inv()*(C*qd+gv.T))
+qdd_modell = sym.simplify(D.inv()*(tau-C*qd-gv.T))
 
 
 ######## ***************************************  
@@ -140,7 +140,7 @@ tau = sym.Matrix([r1*km1/R1*u1, r2*km2/R2*u2])
 
 # tau = (D+J)qdd + (C+B+R)qd +gv
 M = D+J
-qdd_ext = M.inv()*((C+B+R)*qd + gv.T)
+qdd_ext = M.inv()*(tau-(C+B+R)*qd - gv.T)
 
 
 ######## ***************************************  

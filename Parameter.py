@@ -29,10 +29,3 @@ r1 = 100
 r2 = 100
 
 
-
-# define the discretization points
-t_start = 0
-t_stop = 10
-dt = 1e-3
-
-t_sim=np.linspace(t_start, t_stop, int((t_stop - t_start) / dt + 1))
