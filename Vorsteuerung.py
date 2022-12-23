@@ -25,7 +25,7 @@ def flat_output(T,t,maxderi,eta_0,eta_T):
   
     tau = t / T
 
-    eta = np.zeros((maxderi,t.size))
+    eta = np.zeros((maxderi,len(t)))
 
     for derivative in range(0,maxderi):
 

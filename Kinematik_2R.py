@@ -5,7 +5,6 @@
 ## Bib
 import numpy as np
 import sympy as  sym
-from sympy.physics.vector import dynamicsymbols
 import Parameter as param
 
 
@@ -13,8 +12,8 @@ import Parameter as param
 ######## ***************************************  
 ## 1. Transformation 2R Kette
 ######## ***************************************  
-q1,q2 = dynamicsymbols("q1 q2")
-t,ai,a1,a2,di,d1,d2,alpha,alpha1,alpha2,l_s1,l_s2,l1,l2= sym.symbols("t ai a1 a2 di d1 d2 alpha alpha1 alpha2 l_s1 l_s2 l1 l2")
+
+q1,q2,ai,a1,a2,di,d1,d2,alpha,alpha1,alpha2,l_s1,l_s2,l1,l2= sym.symbols("q1 q2 ai a1 a2 di d1 d2 alpha alpha1 alpha2 l_s1 l_s2 l1 l2")
 
 ## For nice looking equations
 sym.init_printing()
@@ -81,8 +80,7 @@ D = m1*Jv_1.T*Jv_1 + Jw_1.T*I1*Jw_1 + m2*Jv_2.T*Jv_2 + Jw_2.T*I2*Jw_2
 qd1, qd2, qdd1, qdd2 = sym.symbols("qd1 qd2 qdd1 qdd2")
 qd = sym.Matrix([qd1,qd2])
 qdd = sym.Matrix([qdd1,qdd2])
-#qd = sym.diff(q,t)
-#qdd = sym.diff(qd,t)
+
 
 c = sym.MutableDenseNDimArray(np.zeros((2,)*3))
 
@@ -141,7 +139,7 @@ R = sym.Matrix([[km1*kb1/R1, 0],[0, km2*kb2/R2]])
 tau = sym.Matrix([r1*km1/R1*u1, r2*km2/R2*u2])
 
 # tau = (D+J)qdd + (C+B+R)qd +gv
-M = C+J
+M = D+J
 qdd_ext = M.inv()*((C+B+R)*qd + gv.T)
 
 

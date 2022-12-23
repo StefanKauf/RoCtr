@@ -57,3 +57,9 @@ plt.ylabel('q1(t), q2(t)')
 plt.grid()
 #plt.savefig('simulation.png')
 plt.show()
+
+
+import Animation as anim
+q1 = solutionOde[:, 0]
+q2 = solutionOde[:, 2]
+anim.plot(q1,q2)
