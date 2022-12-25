@@ -6,18 +6,22 @@ verschiedene 2R Robotermodelle
 """
 
 #from Kinematik_2R import *
+import sympy as sym
 from numpy import sin,cos
 from Parameter import *
 #from Kinematik_2R import f_modell, f_modell_ext
 
 
-def model_nlin(t,x,u=[0,0],ctr = 'none'):
+def model_nlin(t,x,controller):
     """ Nonlinear System Model
         Params
          --------
-        x:             steady states as [q1,qd1,q2,qd2]
+        x:             steady states as [q1,q2,qd1,qd2]
         t:             time as int
-        u_soll:        Solltrajektorie  []
+        controller:    u_soll... Solltrajektorie  [q1_soll, q2_soll, qd1_soll, qd2_soll, qdd1_soll, qdd2_soll]
+                       ctr ... name of the controller
+                       k0 .... Gain matrix
+                       k1 .... Gain matrix verlocity
 
 
         Returns
@@ -30,28 +34,25 @@ def model_nlin(t,x,u=[0,0],ctr = 'none'):
     #u = eingang(x,t)
     
     q1  = x[0]
-    qd1 = x[1]
-    q2  = x[2]
+    q2  = x[1]
+    qd1 = x[2]
     qd2 = x[3]
 
 
-    if ctr == 'multivariable':
-        u = ctr_multi(x)
+    if controller.ctr == 'multivariable':
+        u = ctr_multi(x,controller)
+    else:
+        u =[0,0]
         
 
     u1 = u[0]
     u2 = u[1]   
 
-
-    #qdd = f_modell(qd1,qd2,q1,q2,u1,u2)
-
-
-    dx[0] = x[1]
-    dx[1] = ((I2 + l_s2**2*m2)*(-g*l_s1*m1*cos(q1) - g*m2*(l1*cos(q1) + l_s2*cos(q1 + q2)) + 1.0*l1*l_s2*m2*qd1*qd2*sin(q2) + 1.0*l1*l_s2*m2*qd2*(qd1 + qd2)*sin(q2) + u1) + (I2 + l1*l_s2*m2*cos(q2) + l_s2**2*m2)*(g*l_s2*m2*cos(q1 + q2) + 1.0*l1*l_s2*m2*qd1**2*sin(q2) - u2))/(I1*I2 + I1*l_s2**2*m2 + I2*l1**2*m2 + I2*l_s1**2*m1 + l1**2*l_s2**2*m2**2*sin(q2)**2 + l_s1**2*l_s2**2*m1*m2)
-   # dx[1] = qdd[0]    
-    dx[2] = x[3]    
+    dx[0] = qd1
+    dx[1] = qd2
+    dx[2] = ((I2 + l_s2**2*m2)*(-g*l_s1*m1*cos(q1) - g*m2*(l1*cos(q1) + l_s2*cos(q1 + q2)) + 1.0*l1*l_s2*m2*qd1*qd2*sin(q2) + 1.0*l1*l_s2*m2*qd2*(qd1 + qd2)*sin(q2) + u1) + (I2 + l1*l_s2*m2*cos(q2) + l_s2**2*m2)*(g*l_s2*m2*cos(q1 + q2) + 1.0*l1*l_s2*m2*qd1**2*sin(q2) - u2))/(I1*I2 + I1*l_s2**2*m2 + I2*l1**2*m2 + I2*l_s1**2*m1 + l1**2*l_s2**2*m2**2*sin(q2)**2 + l_s1**2*l_s2**2*m1*m2)
     dx[3] = -((I2 + l1*l_s2*m2*cos(q2) + l_s2**2*m2)*(-g*l_s1*m1*cos(q1) - g*m2*(l1*cos(q1) + l_s2*cos(q1 + q2)) + 1.0*l1*l_s2*m2*qd1*qd2*sin(q2) + 1.0*l1*l_s2*m2*qd2*(qd1 + qd2)*sin(q2) + u1) + (g*l_s2*m2*cos(q1 + q2) + 1.0*l1*l_s2*m2*qd1**2*sin(q2) - u2)*(I1 + I2 + l1**2*m2 + 2*l1*l_s2*m2*cos(q2) + l_s1**2*m1 + l_s2**2*m2))/(I1*I2 + I1*l_s2**2*m2 + I2*l1**2*m2 + I2*l_s1**2*m1 + l1**2*l_s2**2*m2**2*sin(q2)**2 + l_s1**2*l_s2**2*m1*m2)
-    #dx[3] = qdd[1]
+   
 
 
 
@@ -107,7 +108,7 @@ def model_nlin_ext(t,x,u=[0,0],ctr = 'none'):
 
     return dx
 
-def ctr_multi_ext(x,u=[0,0]):
+def ctr_multi_ext(x,u=[0,0,0,0]):
 
     
     """ Extendend Nonlinear System Model
@@ -142,7 +143,7 @@ def ctr_multi_ext(x,u=[0,0]):
     return daq
 
 
-def ctr_multi(x,u=[0,0]):
+def ctr_multi(t,x,ctr):
 
     
     """ Extendend Nonlinear System Model
@@ -150,7 +151,7 @@ def ctr_multi(x,u=[0,0]):
          --------
         x:             steady states as [q1,qd1,q2,qd2]
         t:             time as int
-        u_soll:        Solltrajektorie  []
+        ctr:           u_soll, k0, k1      controller
 
 
         Returns
@@ -158,20 +159,28 @@ def ctr_multi(x,u=[0,0]):
         daq:       input control vektor [daq1, daq2]     
                 
     """
-
-
-    daq =[0,0]  
+    
+    u =[0,0]  
     q1  = x[0]
-    qd1 = x[1]
-    q2  = x[2]
+    q2  = x[1]
+    qd1 = x[2]
     qd2 = x[3]
 
-    aq1 = u[0]
-    aq2 = u[1]
+    q =        sym.Matrix([q1, q2])
+    qd =       sym.Matrix([qd1, qd2])
+    q_soll =   sym.Matrix(ctr.u[0:2])
+    qd_soll =  sym.Matrix(ctr.u[2:4])
+    qdd_soll = sym.Matrix(ctr.u[4:6])
 
 
-    daq[0] = aq1*(I1 + I2 + l1**2*m2 + 2*l1*l_s2*m2*cos(q2) + l_s1**2*m1 + l_s2**2*m2) + aq2*(I2 + l1*l_s2*m2*cos(q2) + l_s2**2*m2) + g*l_s1*m1*cos(q1) + g*m2*(l1*cos(q1) + l_s2*cos(q1 + q2)) - 1.0*l1*l_s2*m2*qd1*qd2*sin(q2) - 1.0*l1*l_s2*m2*qd2*(qd1 + qd2)*sin(q2)
-    daq[1] =  aq1*(I2 + l1*l_s2*m2*cos(q2) + l_s2**2*m2) + aq2*(I2 + l_s2**2*m2) + g*l_s2*m2*cos(q1 + q2) + 1.0*l1*l_s2*m2*qd1**2*sin(q2)
+    # controller
+    aq = qdd_soll-ctr.k0*(q-q_soll) - ctr.k1*(qd- qd_soll)
+     
+    aq1 = aq[0]
+    aq2 = aq[1]
+
+    u[0] = aq1*(I1 + I2 + l1**2*m2 + 2*l1*l_s2*m2*cos(q2) + l_s1**2*m1 + l_s2**2*m2) + aq2*(I2 + l1*l_s2*m2*cos(q2) + l_s2**2*m2) + g*l_s1*m1*cos(q1) + g*m2*(l1*cos(q1) + l_s2*cos(q1 + q2)) - 1.0*l1*l_s2*m2*qd1*qd2*sin(q2) - 1.0*l1*l_s2*m2*qd2*(qd1 + qd2)*sin(q2)
+    u[1] =  aq1*(I2 + l1*l_s2*m2*cos(q2) + l_s2**2*m2) + aq2*(I2 + l_s2**2*m2) + g*l_s2*m2*cos(q1 + q2) + 1.0*l1*l_s2*m2*qd1**2*sin(q2)
 
 
-    return daq
+    return u
