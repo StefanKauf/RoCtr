@@ -123,10 +123,10 @@ gv = P.jacobian(q)
 u1,u2 = sym.symbols("u1 u2")
 tau = sym.Matrix([u1,u2])
 #tau = D*qdd + C*qd + gv
+'''
 qdd_Modell = sym.Function('qdd_modell')(qd1,qd2,q1,q2,u1,u2)
-
 qdd_modell = sym.simplify(D.inv()*(tau-C*qd-gv.T))
-
+'''
 
 ######## ***************************************  
 ## 7. Erweitertes Modell
@@ -140,20 +140,53 @@ tau = sym.Matrix([r1*km1/R1*u1, r2*km2/R2*u2])
 
 # tau = (D+J)qdd + (C+B+R)qd +gv
 M = D+J
+'''
 qdd_ext = M.inv()*(tau-(C+B+R)*qd - gv.T)
-
+'''
 
 ######## ***************************************  
 ## 8.  Einsetzen der Parameter
 ######## ***************************************  
 
-
+'''
 
 qdd_modell_subs = sym.simplify(qdd_modell.subs({l1:param.l1,l2:param.l2,I1:param.I1,I2:param.I2,m1:param.m1,m2:param.m2,l_s1:param.l_s1,l_s2:param.l_s2,g:param.g,J1:param.J1,J2:param.J2, B1:param.B1, B2:param.B2,R1:param.R1,R2:param.R2,r1:param.r1,r2:param.r2,km1:param.km1,km2:param.km2,kb1:param.kb1,kb2:param.kb2}))
 f_modell = sym.lambdify([qd1, qd2,q1,q2,u1,u2], qdd_modell_subs)
 
 qdd_ext_subs = sym.simplify(qdd_ext.subs({l1:param.l1,l2:param.l2,I1:param.I1,I2:param.I2,m1:param.m1,m2:param.m2,l_s1:param.l_s1,l_s2:param.l_s2,g:param.g,J1:param.J1,J2:param.J2, B1:param.B1, B2:param.B2,R1:param.R1,R2:param.R2,r1:param.r1,r2:param.r2,km1:param.km1,km2:param.km2,kb1:param.kb1,kb2:param.kb2}))
 f_modell_ext = sym.lambdify([qd1, qd2,q1,q2,u1,u2], qdd_ext_subs)
+
+'''
+
+######## ***************************************  
+## 9.  analytische Jacobimatrix
+######## ***************************************  
+Psi,Theta = sym.symbols("Psi Theta")
+B_a = sym.Matrix([[sym.cos(Psi)*sym.cos(Theta),-sym.sin(Theta), 0],[sym.sin(Psi)*sym.sin(Theta), sym.cos(Psi), 0],[sym.cos(Theta), 0, 1]])
+
+J = Jv_2.col_join(sym.zeros(1,2)).col_join(Jw_2)
+
+X = sym.eye(3).col_join(sym.zeros(3,3))
+X = X.row_join(sym.zeros(3,3).col_join(B_a))
+Ja = X * J
+
+
+
+
+######## ***************************************  
+## 10.  Multivariable Control
+######## ***************************************  
+
+aq1,aq2 = sym.symbols("aq1 aq2")
+aq = sym.Matrix([aq1,aq2])
+
+# Inverse Regelungsfunktion
+u_regler = sym.simplify(D*aq+C*qd +gv.T)
+u_regler_ext = sym.simplify(M*aq+(C+B+R)*qd +gv.T)
+
+#### Kartesisch in Gelenksraum
+# analytische Jacobimatrix
+
 
 
 
