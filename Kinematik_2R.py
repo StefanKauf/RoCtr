@@ -136,13 +136,13 @@ J = sym.Matrix([[J1*r1**2, 0],[0, J2*r2**2]])
 B = sym.Matrix([[r1**2*B1, 0],[0, B2*r2**2]])
 R = sym.Matrix([[km1*kb1/R1, 0],[0, km2*kb2/R2]])
 
-tau = sym.Matrix([r1*km1/R1*u1, r2*km2/R2*u2])
+#tau = sym.Matrix([r1*km1/R1*u1, r2*km2/R2*u2])
 
 # tau = (D+J)qdd + (C+B+R)qd +gv
 M = D+J
-'''
+
 qdd_ext = M.inv()*(tau-(C+B+R)*qd - gv.T)
-'''
+
 
 ######## ***************************************  
 ## 8.  Einsetzen der Parameter

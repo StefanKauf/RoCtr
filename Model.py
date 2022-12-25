@@ -40,7 +40,7 @@ def model_nlin(t,x,controller):
 
 
     if controller.ctr == 'multivariable':
-        u = ctr_multi(x,controller)
+        u = ctr_multi(t,x,controller)
     else:
         u =[0,0]
         
@@ -59,7 +59,7 @@ def model_nlin(t,x,controller):
     return dx
 
     
-def model_nlin_ext(t,x,u=[0,0],ctr = 'none'):
+def model_nlin_ext(t,x,controller):
 
 
     """ Extendend Nonlinear System Model
@@ -77,19 +77,18 @@ def model_nlin_ext(t,x,u=[0,0],ctr = 'none'):
     """
     
     dx =[0,0,0,0]  
-    #u = eingang(x,t)
+  
     
     q1  = x[0]
-    qd1 = x[1]
-    q2  = x[2]
+    q2  = x[1]
+    qd1 = x[2]
     qd2 = x[3]
 
 
-
-    #qdd = f_modell_ext(qd1,qd2,q1,q2,u1,u2)
-
-    if ctr == 'multivariable':
-        u = ctr_multi_ext(x)
+    if controller.ctr == 'multivariable':
+        u = ctr_multi_ext(t,x,controller)
+    else:
+        u =[0,0]
         
 
 
@@ -97,18 +96,15 @@ def model_nlin_ext(t,x,u=[0,0],ctr = 'none'):
     u2 = u[1]
     #print(u1)
 
-    dx[0] = x[1]
-    dx[1] = (R1*(I2 + l1*l_s2*m2*cos(q2) + l_s2**2*m2)*(1.0*R2*l_s2*m2*(g*cos(q1 + q2) + l1*qd1**2*sin(q2)) - km2*r2*u2 + qd2*(B2*R2*r2**2 + kb2*km2)) - R2*(I2 + J2*r2**2 + l_s2**2*m2)*(R1*(g*l_s1*m1*cos(q1) + g*m2*(l1*cos(q1) + l_s2*cos(q1 + q2)) - 1.0*l1*l_s2*m2*qd2*(qd1 + qd2)*sin(q2)) - km1*r1*u1 + qd1*(R1*(B1*r1**2 - 1.0*l1*l_s2*m2*qd2*sin(q2)) + kb1*km1)))/(R1*R2*(I1*I2 + I1*J2*r2**2 + I1*l_s2**2*m2 + I2*J1*r1**2 + I2*J2*r2**2 + I2*l1**2*m2 + I2*l_s1**2*m1 + J1*J2*r1**2*r2**2 + J1*l_s2**2*m2*r1**2 + J2*l1**2*m2*r2**2 + 2*J2*l1*l_s2*m2*r2**2*cos(q2) + J2*l_s1**2*m1*r2**2 + J2*l_s2**2*m2*r2**2 + l1**2*l_s2**2*m2**2*sin(q2)**2 + l_s1**2*l_s2**2*m1*m2))
-    #dx[1] = qdd[0]
-    dx[2] = x[3]
-    dx[3] = (R1*(-1.0*R2*l_s2*m2*(g*cos(q1 + q2) + l1*qd1**2*sin(q2)) + km2*r2*u2 - qd2*(B2*R2*r2**2 + kb2*km2))*(I1 + I2 + J1*r1**2 + l1**2*m2 + 2*l1*l_s2*m2*cos(q2) + l_s1**2*m1 + l_s2**2*m2) + R2*(I2 + l1*l_s2*m2*cos(q2) + l_s2**2*m2)*(R1*(g*l_s1*m1*cos(q1) + g*m2*(l1*cos(q1) + l_s2*cos(q1 + q2)) - 1.0*l1*l_s2*m2*qd2*(qd1 + qd2)*sin(q2)) - km1*r1*u1 + qd1*(R1*(B1*r1**2 - 1.0*l1*l_s2*m2*qd2*sin(q2)) + kb1*km1)))/(R1*R2*(I1*I2 + I1*J2*r2**2 + I1*l_s2**2*m2 + I2*J1*r1**2 + I2*J2*r2**2 + I2*l1**2*m2 + I2*l_s1**2*m1 + J1*J2*r1**2*r2**2 + J1*l_s2**2*m2*r1**2 + J2*l1**2*m2*r2**2 + 2*J2*l1*l_s2*m2*r2**2*cos(q2) + J2*l_s1**2*m1*r2**2 + J2*l_s2**2*m2*r2**2 + l1**2*l_s2**2*m2**2*sin(q2)**2 + l_s1**2*l_s2**2*m1*m2))
-    #dx[3] = qdd[1]
-
-
-
+    dx[0] = qd1
+    dx[1] = qd2
+    #dx[2] = (R1*(I2 + l1*l_s2*m2*cos(q2) + l_s2**2*m2)*(1.0*R2*l_s2*m2*(g*cos(q1 + q2) + l1*qd1**2*sin(q2)) - km2*r2*u2 + qd2*(B2*R2*r2**2 + kb2*km2)) - R2*(I2 + J2*r2**2 + l_s2**2*m2)*(R1*(g*l_s1*m1*cos(q1) + g*m2*(l1*cos(q1) + l_s2*cos(q1 + q2)) - 1.0*l1*l_s2*m2*qd2*(qd1 + qd2)*sin(q2)) - km1*r1*u1 + qd1*(R1*(B1*r1**2 - 1.0*l1*l_s2*m2*qd2*sin(q2)) + kb1*km1)))/(R1*R2*(I1*I2 + I1*J2*r2**2 + I1*l_s2**2*m2 + I2*J1*r1**2 + I2*J2*r2**2 + I2*l1**2*m2 + I2*l_s1**2*m1 + J1*J2*r1**2*r2**2 + J1*l_s2**2*m2*r1**2 + J2*l1**2*m2*r2**2 + 2*J2*l1*l_s2*m2*r2**2*cos(q2) + J2*l_s1**2*m1*r2**2 + J2*l_s2**2*m2*r2**2 + l1**2*l_s2**2*m2**2*sin(q2)**2 + l_s1**2*l_s2**2*m1*m2))
+    #dx[3] = (R1*(-1.0*R2*l_s2*m2*(g*cos(q1 + q2) + l1*qd1**2*sin(q2)) + km2*r2*u2 - qd2*(B2*R2*r2**2 + kb2*km2))*(I1 + I2 + J1*r1**2 + l1**2*m2 + 2*l1*l_s2*m2*cos(q2) + l_s1**2*m1 + l_s2**2*m2) + R2*(I2 + l1*l_s2*m2*cos(q2) + l_s2**2*m2)*(R1*(g*l_s1*m1*cos(q1) + g*m2*(l1*cos(q1) + l_s2*cos(q1 + q2)) - 1.0*l1*l_s2*m2*qd2*(qd1 + qd2)*sin(q2)) - km1*r1*u1 + qd1*(R1*(B1*r1**2 - 1.0*l1*l_s2*m2*qd2*sin(q2)) + kb1*km1)))/(R1*R2*(I1*I2 + I1*J2*r2**2 + I1*l_s2**2*m2 + I2*J1*r1**2 + I2*J2*r2**2 + I2*l1**2*m2 + I2*l_s1**2*m1 + J1*J2*r1**2*r2**2 + J1*l_s2**2*m2*r1**2 + J2*l1**2*m2*r2**2 + 2*J2*l1*l_s2*m2*r2**2*cos(q2) + J2*l_s1**2*m1*r2**2 + J2*l_s2**2*m2*r2**2 + l1**2*l_s2**2*m2**2*sin(q2)**2 + l_s1**2*l_s2**2*m1*m2))
+    dx[2] = -(-R1*(R2*(g*l_s2*m2*cos(q1 + q2) + 1.0*l1*l_s2*m2*qd1**2*sin(q2) - u2) + qd2*(B2*R2*r2**2 + kb2*km2))*(I2 + l1*l_s2*m2*cos(q2) + l_s2**2*m2) + R2*(R1*(g*l_s1*m1*cos(q1) + g*m2*(l1*cos(q1) + l_s2*cos(q1 + q2)) - 1.0*l1*l_s2*m2*qd2*(qd1 + qd2)*sin(q2) - u1) + qd1*(R1*(B1*r1**2 - 1.0*l1*l_s2*m2*qd2*sin(q2)) + kb1*km1))*(I2 + J2*r2**2 + l_s2**2*m2))/(R1*R2*(I1*I2 + I1*J2*r2**2 + I1*l_s2**2*m2 + I2*J1*r1**2 + I2*J2*r2**2 + I2*l1**2*m2 + I2*l_s1**2*m1 + J1*J2*r1**2*r2**2 + J1*l_s2**2*m2*r1**2 + J2*l1**2*m2*r2**2 + 2*J2*l1*l_s2*m2*r2**2*cos(q2) + J2*l_s1**2*m1*r2**2 + J2*l_s2**2*m2*r2**2 + l1**2*l_s2**2*m2**2*sin(q2)**2 + l_s1**2*l_s2**2*m1*m2))
+    dx[3] = (R1*(R2*(-g*l_s2*m2*cos(q1 + q2) - 1.0*l1*l_s2*m2*qd1**2*sin(q2) + u2) - qd2*(B2*R2*r2**2 + kb2*km2))*(I1 + I2 + J1*r1**2 + l1**2*m2 + 2*l1*l_s2*m2*cos(q2) + l_s1**2*m1 + l_s2**2*m2) + R2*(R1*(g*l_s1*m1*cos(q1) + g*m2*(l1*cos(q1) + l_s2*cos(q1 + q2)) - 1.0*l1*l_s2*m2*qd2*(qd1 + qd2)*sin(q2) - u1) + qd1*(R1*(B1*r1**2 - 1.0*l1*l_s2*m2*qd2*sin(q2)) + kb1*km1))*(I2 + l1*l_s2*m2*cos(q2) + l_s2**2*m2))/(R1*R2*(I1*I2 + I1*J2*r2**2 + I1*l_s2**2*m2 + I2*J1*r1**2 + I2*J2*r2**2 + I2*l1**2*m2 + I2*l_s1**2*m1 + J1*J2*r1**2*r2**2 + J1*l_s2**2*m2*r1**2 + J2*l1**2*m2*r2**2 + 2*J2*l1*l_s2*m2*r2**2*cos(q2) + J2*l_s1**2*m1*r2**2 + J2*l_s2**2*m2*r2**2 + l1**2*l_s2**2*m2**2*sin(q2)**2 + l_s1**2*l_s2**2*m1*m2))
     return dx
 
-def ctr_multi_ext(x,u=[0,0,0,0]):
+def ctr_multi_ext(t,x,ctr):
 
     
     """ Extendend Nonlinear System Model
@@ -126,21 +122,37 @@ def ctr_multi_ext(x,u=[0,0,0,0]):
     """
 
 
-    daq =[0,0]  
+    u = [0,0]  
+    u_soll = [0,0,0,0,0,0]
+
+    for i in range(6):
+        u_soll[i] = np.interp(t,ctr.t,ctr.u[i,:])   # Interpolierung von u, damit die Funktion mit ODE-Solver aufgerufen wird kann
+
+
     q1  = x[0]
-    qd1 = x[1]
-    q2  = x[2]
+    q2  = x[1]
+    qd1 = x[2]
     qd2 = x[3]
 
-    aq1 = u[0]
-    aq2 = u[1]
+    q =        sym.Matrix([q1, q2])
+    qd =       sym.Matrix([qd1, qd2])
+    q_soll =   sym.Matrix(u_soll[0:2])
+    qd_soll =  sym.Matrix(u_soll[2:4])
+    qdd_soll = sym.Matrix(u_soll[4:6])
 
 
-    daq[0] = (R1*(aq1*(I1 + I2 + J1*r1**2 + l1**2*m2 + 2*l1*l_s2*m2*cos(q2) + l_s1**2*m1 + l_s2**2*m2) + aq2*(I2 + l1*l_s2*m2*cos(q2) + l_s2**2*m2) + g*l_s1*m1*cos(q1) + g*m2*(l1*cos(q1) + l_s2*cos(q1 + q2)) - 1.0*l1*l_s2*m2*qd2*(qd1 + qd2)*sin(q2)) + qd1*(R1*(B1*r1**2 - 1.0*l1*l_s2*m2*qd2*sin(q2)) + kb1*km1))/R1
-    daq[1] = (R2*(aq1*(I2 + l1*l_s2*m2*cos(q2) + l_s2**2*m2) + aq2*(I2 + J2*r2**2 + l_s2**2*m2) + g*l_s2*m2*cos(q1 + q2) + 1.0*l1*l_s2*m2*qd1**2*sin(q2)) + qd2*(B2*R2*r2**2 + kb2*km2))/R2
+    # controller
+    aq = qdd_soll-ctr.k0*(q-q_soll) - ctr.k1*(qd- qd_soll)
+     
+    aq1 = aq[0]
+    aq2 = aq[1]
 
 
-    return daq
+    u[0] = (R1*(aq1*(I1 + I2 + J1*r1**2 + l1**2*m2 + 2*l1*l_s2*m2*cos(q2) + l_s1**2*m1 + l_s2**2*m2) + aq2*(I2 + l1*l_s2*m2*cos(q2) + l_s2**2*m2) + g*l_s1*m1*cos(q1) + g*m2*(l1*cos(q1) + l_s2*cos(q1 + q2)) - 1.0*l1*l_s2*m2*qd2*(qd1 + qd2)*sin(q2)) + qd1*(R1*(B1*r1**2 - 1.0*l1*l_s2*m2*qd2*sin(q2)) + kb1*km1))/R1
+    u[1] = (R2*(aq1*(I2 + l1*l_s2*m2*cos(q2) + l_s2**2*m2) + aq2*(I2 + J2*r2**2 + l_s2**2*m2) + g*l_s2*m2*cos(q1 + q2) + 1.0*l1*l_s2*m2*qd1**2*sin(q2)) + qd2*(B2*R2*r2**2 + kb2*km2))/R2
+
+
+    return u
 
 
 def ctr_multi(t,x,ctr):
@@ -160,7 +172,13 @@ def ctr_multi(t,x,ctr):
                 
     """
     
-    u =[0,0]  
+    u = [0,0]  
+
+    u_soll = [0,0,0,0,0,0]
+    for i in range(6):
+        u_soll[i] = np.interp(t,ctr.t,ctr.u[i,:])   # Interpolierung von u, damit die Funktion mit ODE-Solver aufgerufen wird kann
+
+
     q1  = x[0]
     q2  = x[1]
     qd1 = x[2]
@@ -168,9 +186,9 @@ def ctr_multi(t,x,ctr):
 
     q =        sym.Matrix([q1, q2])
     qd =       sym.Matrix([qd1, qd2])
-    q_soll =   sym.Matrix(ctr.u[0:2])
-    qd_soll =  sym.Matrix(ctr.u[2:4])
-    qdd_soll = sym.Matrix(ctr.u[4:6])
+    q_soll =   sym.Matrix(u_soll[0:2])
+    qd_soll =  sym.Matrix(u_soll[2:4])
+    qdd_soll = sym.Matrix(u_soll[4:6])
 
 
     # controller
