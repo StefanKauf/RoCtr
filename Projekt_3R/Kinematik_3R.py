@@ -177,7 +177,7 @@ Ainv = sym.simplify(A.inv())
 M_inv = Ainv.subs([(a11,M[0,0]),(a12,M[0,1]),(a13,M[0,2]), (a21,M[1,0]), (a22,M[1,1]), (a23,M[1,2]), (a31,M[2,0]), (a32,M[2,1]), (a33,M[2,2]) ])
 #M_inv = sym.simplify(M_inv)
 qdd_ext = M_inv*(tau-(C+B+R)*qd - gv.T)
-#qdd_ext = sym.simplify(qdd_ext)
+#
 
 
 
