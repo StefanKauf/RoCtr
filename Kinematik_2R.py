@@ -30,6 +30,8 @@ T02 = M1*G1*M2*G2
 T01 = M1*G1
 
 
+
+
 ######## ***************************************  
 ## 2. Aufstellen der Jacobimatrix
 ######## ***************************************  
@@ -169,6 +171,18 @@ J = Jv_2.col_join(sym.zeros(1,2)).col_join(Jw_2)
 X = sym.eye(3).col_join(sym.zeros(3,3))
 X = X.row_join(sym.zeros(3,3).col_join(B_a))
 Ja = X * J
+
+# inverse analytische Jacobimatrix --> Pseudoinverse
+xd, yd, zd, xw, yw, zw= sym.symbols("x_dot y_dot z_dot x_omega y_omega z_omega")
+xe = sym.Matrix([xd, yd, zd, xw, yw, zw ])
+
+Ja_t = Ja.T*(Ja*Ja.T)
+
+# zeitliche Ableitung der analytischen Jacobimatrix
+
+
+
+
 
 
 

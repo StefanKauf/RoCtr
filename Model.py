@@ -9,8 +9,12 @@ verschiedene 2R Robotermodelle
 import sympy as sym
 from numpy import sin,cos
 from Parameter import *
-#from Kinematik_2R import f_modell, f_modell_ext
 
+
+######## ***************************************  
+##         MODELLE    
+##  
+######## ***************************************  
 
 def model_nlin(t,x,controller=""):
     """ Nonlinear System Model
@@ -160,7 +164,6 @@ def ctr_multi_ext(t,x,ctr):
 
 
 def ctr_multi(t,x,ctr):
-
     
     """ Extendend Nonlinear System Model
         Params
@@ -206,3 +209,108 @@ def ctr_multi(t,x,ctr):
 
 
     return u
+
+
+
+######## ***************************************  
+##         TTRANSFORMATION    
+##  Kartesicher Raum in den Gelenlswinkelraum
+######## ***************************************  
+
+def Ja(x):
+    """ Transformation from the Joinspace velocity to kartesian verlocity
+        Params
+         --------
+        x:             steady states as [q1,qd1,q2,qd2]      
+        
+        
+        Returns
+        --------
+        (ax:       Kartesian velocitys [x_dot, y_dot, z_dot, omega_X, omega_y, omega_z]  )
+        Ja:       analytische Jacobimatrix    
+                
+    """
+
+    q1  = x[0]
+    q2  = x[1]
+    '''
+    Ja = np.Matrix([[-l1*sin(q1) + l_s2*(-sin(q1)*cos(q2) - sin(q2)*cos(q1)), l_s2*(-sin(q1)*cos(q2) - sin(q2)*cos(q1))],
+                    [ l1*cos(q1) + l_s2*(-sin(q1)*sin(q2) + cos(q1)*cos(q2)), l_s2*(-sin(q1)*sin(q2) + cos(q1)*cos(q2))],
+                    [                                                      0,                                         0],
+                    [                                                      0,                                         0],
+                    [                                                      0,                                         0],
+                    [                                                      1,                                         1]])
+
+    '''
+
+    Ja = np.Matrix([[-l1*sin(q1) - l_s2*sin(q1 + q2), -l_s2*sin(q1 + q2)],
+                    [ l1*cos(q1) + l_s2*cos(q1 + q2),  l_s2*cos(q1 + q2)]])
+    
+       
+
+    return Ja
+
+def Ja_inv(x,ax):
+    """ Transformation from the kartesian verlocity to Joinspace velocity 
+        Params
+         --------
+        x:             steady states as [q1,qd1,q2,qd2]   
+        ax:            Kartesian velocitys [x_dot, y_dot, z_dot, omega_X, omega_y, omega_z]    
+        
+        
+        Returns
+        --------
+        qd:       Join velocitys [q1_dot, q2_dot]     
+                
+    """
+
+    q1  = x[0]
+    q2  = x[1]
+
+    '''
+    Ja_t = np.Matrix([[-l1*sin(q1) + 2*l_s2*(-sin(q1)*cos(q2) - sin(q2)*cos(q1)) + (-l1*sin(q1) + l_s2*(-sin(q1)*cos(q2) - sin(q2)*cos(q1)))*(l_s2**2*(-sin(q1)*cos(q2) - sin(q2)*cos(q1))**2 + (-l1*sin(q1) + l_s2*(-sin(q1)*cos(q2) - sin(q2)*cos(q1)))**2) + (l1*cos(q1) + l_s2*(-sin(q1)*sin(q2) + cos(q1)*cos(q2)))*(l_s2**2*(-sin(q1)*sin(q2) + cos(q1)*cos(q2))*(-sin(q1)*cos(q2) - sin(q2)*cos(q1)) + (-l1*sin(q1) + l_s2*(-sin(q1)*cos(q2) - sin(q2)*cos(q1)))*(l1*cos(q1) + l_s2*(-sin(q1)*sin(q2) + cos(q1)*cos(q2)))), l1*cos(q1) + 2*l_s2*(-sin(q1)*sin(q2) + cos(q1)*cos(q2)) + (-l1*sin(q1) + l_s2*(-sin(q1)*cos(q2) - sin(q2)*cos(q1)))*(l_s2**2*(-sin(q1)*sin(q2) + cos(q1)*cos(q2))*(-sin(q1)*cos(q2) - sin(q2)*cos(q1)) + (-l1*sin(q1) + l_s2*(-sin(q1)*cos(q2) - sin(q2)*cos(q1)))*(l1*cos(q1) + l_s2*(-sin(q1)*sin(q2) + cos(q1)*cos(q2)))) + (l1*cos(q1) + l_s2*(-sin(q1)*sin(q2) + cos(q1)*cos(q2)))*(l_s2**2*(-sin(q1)*sin(q2) + cos(q1)*cos(q2))**2 + (l1*cos(q1) + l_s2*(-sin(q1)*sin(q2) + cos(q1)*cos(q2)))**2), 0, 0, 0, (-l1*sin(q1) + l_s2*(-sin(q1)*cos(q2) - sin(q2)*cos(q1)))*(-l1*sin(q1) + 2*l_s2*(-sin(q1)*cos(q2) - sin(q2)*cos(q1))) + (l1*cos(q1) + l_s2*(-sin(q1)*sin(q2) + cos(q1)*cos(q2)))*(l1*cos(q1) + 2*l_s2*(-sin(q1)*sin(q2) + cos(q1)*cos(q2))) + 2],
+                    [                               -l1*sin(q1) + l_s2*(l_s2**2*(-sin(q1)*cos(q2) - sin(q2)*cos(q1))**2 + (-l1*sin(q1) + l_s2*(-sin(q1)*cos(q2) - sin(q2)*cos(q1)))**2)*(-sin(q1)*cos(q2) - sin(q2)*cos(q1)) + l_s2*(-sin(q1)*sin(q2) + cos(q1)*cos(q2))*(l_s2**2*(-sin(q1)*sin(q2) + cos(q1)*cos(q2))*(-sin(q1)*cos(q2) - sin(q2)*cos(q1)) + (-l1*sin(q1) + l_s2*(-sin(q1)*cos(q2) - sin(q2)*cos(q1)))*(l1*cos(q1) + l_s2*(-sin(q1)*sin(q2) + cos(q1)*cos(q2)))) + 2*l_s2*(-sin(q1)*cos(q2) - sin(q2)*cos(q1)),                                l1*cos(q1) + l_s2*(l_s2**2*(-sin(q1)*sin(q2) + cos(q1)*cos(q2))**2 + (l1*cos(q1) + l_s2*(-sin(q1)*sin(q2) + cos(q1)*cos(q2)))**2)*(-sin(q1)*sin(q2) + cos(q1)*cos(q2)) + 2*l_s2*(-sin(q1)*sin(q2) + cos(q1)*cos(q2)) + l_s2*(-sin(q1)*cos(q2) - sin(q2)*cos(q1))*(l_s2**2*(-sin(q1)*sin(q2) + cos(q1)*cos(q2))*(-sin(q1)*cos(q2) - sin(q2)*cos(q1)) + (-l1*sin(q1) + l_s2*(-sin(q1)*cos(q2) - sin(q2)*cos(q1)))*(l1*cos(q1) + l_s2*(-sin(q1)*sin(q2) + cos(q1)*cos(q2)))), 0, 0, 0,                                l_s2*(-l1*sin(q1) + 2*l_s2*(-sin(q1)*cos(q2) - sin(q2)*cos(q1)))*(-sin(q1)*cos(q2) - sin(q2)*cos(q1)) + l_s2*(l1*cos(q1) + 2*l_s2*(-sin(q1)*sin(q2) + cos(q1)*cos(q2)))*(-sin(q1)*sin(q2) + cos(q1)*cos(q2)) + 2]])
+
+    
+    # qn stellt einen Zusätzlichen Freiheitsgrad dar mit welchem die Anforderungen maximiert werden können [S.42ff, Skript Automatisierungs-und Regelungstechnik WS2021/22 TU-Wien]
+    #qn = np.matrix([0,0])    
+    #qd = np.dot(Ja_t,ax) + (np.eye(2) - Ja_t*J_analytisch(x))*qn
+
+    
+    qd = np.dot(Ja_t,ax)
+    '''
+    Ja_inv = np.Matrix([[ cos(q1 + q2)/(l1*sin(q2)),                           sin(q1 + q2)/(l1*sin(q2))],
+                    [-(l1*cos(q1) + l_s2*cos(q1 + q2))/(l1*l_s2*sin(q2)), -(l1*sin(q1) + l_s2*sin(q1 + q2))/(l1*l_s2*sin(q2))]])
+
+
+    return Ja_inv
+
+
+def Ja_diff(x,qdd):
+    """ Transformation from the Joinspace velocity to kartesian acelaration 
+        Params
+         --------
+        x:             steady states as [q1,qd1,q2,qd2]   
+        qdd:           steady state [qdd1, qdd2 ]
+        
+        
+        Returns
+        --------
+        xdd:       Join velocitys [x_dot_dort, y_dot_dot]     
+                
+    """
+
+    q1  = x[0]
+    q2  = x[1]
+    qd1 = x[2]
+    qd2 = x[3]
+
+
+    Ja_diff = np.Matrix([ [-l1*qd1*cos(q1) - l_s2*qd1*cos(q1 + q2) - l_s2*qd2*cos(q1 + q2), -l_s2*(qd1 + qd2)*cos(q1 + q2)],
+                        [-l1*qd1*sin(q1) - l_s2*qd1*sin(q1 + q2) - l_s2*qd2*sin(q1 + q2), -l_s2*(qd1 + qd2)*sin(q1 + q2)]])
+
+    
+
+    return Ja(x)*qdd+Ja_diff
+
+
