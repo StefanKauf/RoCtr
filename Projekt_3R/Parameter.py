@@ -12,7 +12,7 @@ Parameter des Roboters
 # Armlängen  [m]
 l1 =   1
 l2 =   1
-l3 =   1 # 0.5
+l3 =   0.5
 # Abstand zum Massenmittelpunkt vom Gelnk aus [m]
 l_s1 = l1/2
 l_s2 = l2/2
@@ -20,11 +20,11 @@ l_s3 = l3/2
 # Trägheitsmomente [kgm²]
 I1 =   10
 I2 =   10
-I3 =   5 *2     
+I3 =   5      
 # Massen  [kg]
 m1 =   50
 m2 =   50
-m3 =   25*2     
+m3 =   25    
 # Erdbeschleunigung [m/s²]
 g =    9.81   
 

@@ -41,9 +41,9 @@ T01 = M1*G1
 ######## ***************************************  
 
 # Geschwindigkeit in x,y Richtung
-Jv_01 = T01[1:3,0].jacobian(q)
-Jv_02 = T02[1:3,0].jacobian(q)    # 1:3  --> Jacobimatrix bis zur 2ten Dimension, 1 Zeile ist die homogenisierung
-Jv_03 = T03[1:3,0].jacobian(q)
+Jv_01 = T01[1:4,0].jacobian(q)
+Jv_02 = T02[1:4,0].jacobian(q)    # 1:3  --> Jacobimatrix bis zur 2ten Dimension, 1 Zeile ist die homogenisierung
+Jv_03 = T03[1:4,0].jacobian(q)
 
 
 # Rotationsgeshwindigkeit
@@ -68,12 +68,12 @@ Jw_03 = Jw_03[1:4,:]
 
 Jv_1 = Jv_01.subs({a1:l_s1,alpha1:0,d1:0})
 Jv_2 = Jv_02.subs({a1:l1,a2:l_s2,alpha1:0, alpha2:0,d1:0,d2:0})
-Jv_3 = Jv_03.subs({a1:l1,a2:l2,a3:l_s3,alpha1:0, alpha2:0,alpha3:0,d1:0,d2:0,d3:0})
+Jv_3 = sym.simplify(Jv_03.subs({a1:l1,a2:l2,a3:l_s3,alpha1:0, alpha2:0,alpha3:0,d1:0,d2:0,d3:0}))
 
 
 Jw_1 = Jw_01.subs({a1:l_s1,alpha1:0,d1:0})
 Jw_2 = Jw_02.subs({a1:l1,a2:l_s2,alpha1:0, alpha2:0,d1:0,d2:0})
-Jw_3 = Jw_03.subs({a1:l1,a2:l2,a3:l_s3,alpha1:0, alpha2:0,alpha3:0,d1:0,d2:0,d3:0})
+Jw_3 = sym.simplify(Jw_03.subs({a1:l1,a2:l2,a3:l_s3,alpha1:0, alpha2:0,alpha3:0,d1:0,d2:0,d3:0}))
 
 
 
@@ -143,30 +143,6 @@ J = sym.Matrix([[J1*r1**2, 0, 0],[0, J2*r2**2, 0],[0, 0, J3*r3**2]])
 B = sym.Matrix([[r1**2*B1, 0, 0],[0, B2*r2**2, 0],[0, 0,  B3*r3**2]])
 R = sym.Matrix([[km1*kb1/R1, 0, 0],[0, km2*kb2/R2, 0],[0, 0, km3*kb3/R3]])
 
-#tau = sym.Matrix([r1*km1/R1*u1, r2*km2/R2*u2, r3*km3/R3*u3])
-
-# tau = (D+J)qdd + (C+B+R)qd +gv
-
-
-
-
-#from sympy.polys.domainmatrix import DomainMatrix
-#dX = DomainMatrix.from_list_sympy(*M.shape, M.tolist())
-#Minv = dX.to_field().inv().to_Matrix()
-#M_inv = M.inv()
-
-#M_sub = M.subs(subs)    
-
-#qdd_ext = M_inv*(tau-(C+B+R)*qd - gv.T)
-#qdd_ext_subs = sym.simplify(qdd_ext.subs(subs))
-#f_modell_ext = sym.lambdify([qd1, qd2,q1,q2,u1,u2], qdd_ext_subs)
-
-#M = DomainMatrix.from_Matrix(M)
-#M*qdd = (tau-(C+B+R)*qd - gv.T)
-#fx=M.solve((tau-(C+B+R)*qd - gv.T))
-
-
-#sol = solve_linear_system(system,x,y)   system = M/tau...
 
 M = sym.simplify(D+J)
 a11,a12,a13,a21,a22,a23,a31,a32,a33 = sym.symbols("a11 a12 a13 a21 a22 a23 a31 a32 a33")
@@ -177,7 +153,7 @@ Ainv = sym.simplify(A.inv())
 M_inv = Ainv.subs([(a11,M[0,0]),(a12,M[0,1]),(a13,M[0,2]), (a21,M[1,0]), (a22,M[1,1]), (a23,M[1,2]), (a31,M[2,0]), (a32,M[2,1]), (a33,M[2,2]) ])
 #M_inv = sym.simplify(M_inv)
 qdd_ext = M_inv*(tau-(C+B+R)*qd - gv.T)
-#
+
 
 
 
@@ -189,4 +165,49 @@ qdd_ext = M_inv*(tau-(C+B+R)*qd - gv.T)
 subs_var = [(l1,param.l1),(l2,param.l2),(l3,param.l3),(I1,param.I1),(I2,param.I2),(I3,param.I3),(m1,param.m1),(m2,param.m2),(m3,param.m3),(l_s1,param.l_s1),(l_s2,param.l_s2),(l_s3,param.l_s3),(g,param.g),(J1,param.J1),(J2,param.J2),(J3,param.J3),(B1,param.B1),(B2,param.B2),(B3,param.B3),(R1,param.R1),(R2,param.R2),(R3,param.R3),(r1,param.r1),(r2,param.r2),(r3,param.r3),(km1,param.km1),(km2,param.km2),(km3,param.km3),(kb1,param.kb1),(kb2,param.kb2),(kb3,param.kb3)]
 T03sub = T03.subs({a1:l1,a2:l2,a3:l3,alpha1:0, alpha2:0,alpha3:0,d1:0,d2:0,d3:0})
 
-T0e = T03sub.subs(subs_var)    # Vorwärtskinematik T0 auf T_endeffektor
+
+
+######## ***************************************  
+## 9.  analytische Jacobimatrix
+######## ***************************************  
+Psi,Theta, lamda = sym.symbols("Psi Theta lamda")
+B_a = sym.Matrix([[sym.cos(Psi)*sym.cos(Theta),-sym.sin(Theta), 0],[sym.sin(Psi)*sym.sin(Theta), sym.cos(Psi), 0],[sym.cos(Theta), 0, 1]])
+B_inv = sym.simplify(B_a.inv())
+
+Jq =  np.vstack((Jv_3,Jw_3))
+
+X = sym.eye(3).col_join(sym.zeros(3,3))
+X = X.row_join(sym.zeros(3,3).col_join(B_inv))
+Ja = sym.simplify(X * Jq)
+
+# inverse analytische Jacobimatrix --> Pseudoinverse
+Ja = Ja.T
+
+#Ja_t = sym.simplify(Ja.T*(Ja*Ja.T+lamda**2*sym.eye(3)).inv())
+# Hilfskonstrukt zum Invertieren
+
+Jat = Ja*Ja.T+lamda**2*sym.eye(3)
+Jat_inv = Ainv.subs([(a11,Jat[0,0]),(a12,Jat[0,1]),(a13,Jat[0,2]), (a21,Jat[1,0]), (a22,Jat[1,1]), (a23,Jat[1,2]), (a31,Jat[2,0]), (a32,Jat[2,1]), (a33,Jat[2,2]) ])
+Ja_t = sym.simplify(Ja*Jat_inv)
+
+
+# zeitliche Ableitung der analytischen Jacobimatrix
+Ja_d_q1 = sym.diff(Ja,q1)
+Ja_d_q2 = sym.diff(Ja,q2)
+Ja_d_q3 = sym.diff(Ja,q3)
+Ja_diff = sym.simplify(Ja_d_q1*qd1 + Ja_d_q2*qd2 + Ja_d_q3)
+
+
+
+
+
+######## ***************************************  
+## 10.  Multivariable Control
+######## ***************************************  
+
+aq1,aq2,aq3= sym.symbols("aq1 aq2 aq3")
+aq = sym.Matrix([aq1,aq2,aq3])
+
+# Inverse Regelungsfunktion
+#u_regler = sym.simplify(D*aq+C*qd +gv.T)
+u_regler_ext = sym.simplify(M*aq+(C+B+R)*qd +gv.T)
