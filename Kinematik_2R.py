@@ -160,6 +160,9 @@ f_modell_ext = sym.lambdify([qd1, qd2,q1,q2,u1,u2], qdd_ext_subs)
 
 '''
 
+
+
+
 ######## ***************************************  
 ## 9.  analytische Jacobimatrix
 ######## ***************************************  
@@ -170,19 +173,33 @@ J = Jv_2.col_join(sym.zeros(1,2)).col_join(Jw_2)
 
 X = sym.eye(3).col_join(sym.zeros(3,3))
 X = X.row_join(sym.zeros(3,3).col_join(B_a))
-Ja = X * J
+Ja = sym.simplify(X * J)
 
 # inverse analytische Jacobimatrix --> Pseudoinverse
-xd, yd, zd, xw, yw, zw= sym.symbols("x_dot y_dot z_dot x_omega y_omega z_omega")
+xd, yd, zd, xw, yw, zw, lamda= sym.symbols("x_dot y_dot z_dot x_omega y_omega z_omega lamda")
 xe = sym.Matrix([xd, yd, zd, xw, yw, zw ])
 
-Ja_t = Ja.T*(Ja*Ja.T)
+Ja_t = Ja.T*(Ja*Ja.T+lamda**2*sym.eye(2))
 
 # zeitliche Ableitung der analytischen Jacobimatrix
 
+######## ***************************************  
+## 9.  analytische Jacobimatrix
+######## ***************************************  
+'''
+# Analytic Jacobi matrix
+Ja = sym.simplify(J[0:2,:])
 
 
+# Inverse Jacobian
+Ja_inv = sym.simplify(Ja.inv())
 
+# Time devireative of the jacobian
+Ja_d_q1 = sym.diff(Ja,q1)
+Ja_d_q2 = sym.diff(Ja,q2)
+Ja_diff = sym.simplify(Ja_d_q1*qd1 + Ja_d_q2*qd2)
+
+'''
 
 
 
