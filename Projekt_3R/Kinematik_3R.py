@@ -188,7 +188,7 @@ Ja = Ja.T
 
 Jat = Ja*Ja.T+lamda**2*sym.eye(3)
 Jat_inv = Ainv.subs([(a11,Jat[0,0]),(a12,Jat[0,1]),(a13,Jat[0,2]), (a21,Jat[1,0]), (a22,Jat[1,1]), (a23,Jat[1,2]), (a31,Jat[2,0]), (a32,Jat[2,1]), (a33,Jat[2,2]) ])
-Ja_t = sym.simplify(Ja*Jat_inv)
+Ja_t = Ja.T*Jat_inv
 
 
 # zeitliche Ableitung der analytischen Jacobimatrix
@@ -209,5 +209,5 @@ aq1,aq2,aq3= sym.symbols("aq1 aq2 aq3")
 aq = sym.Matrix([aq1,aq2,aq3])
 
 # Inverse Regelungsfunktion
-#u_regler = sym.simplify(D*aq+C*qd +gv.T)
-u_regler_ext = sym.simplify(M*aq+(C+B+R)*qd +gv.T)
+#u_regler_ext = sym.simplify(M*aq+(C+B+R)*qd +gv.T)
+u_regler_ext = M*aq+(C+B+R)*qd +gv.T
