@@ -223,6 +223,8 @@ F = sym.Matrix([fx,0,0, 0,0,0])
 
 qdd_ext_force = M_inv*(tau-(C+B+R)*qd - gv.T - Ja*F)
 
+Ja*M_inv*Ja.T
+
 
 ######## ***************************************  
 ## 12.  Bestimmen der Rotationsmatrix
@@ -233,5 +235,5 @@ R2y = sym.Matrix([[sym.cos(theta), 0, sym.sin(theta)],[0, 1, 0],[-sym.sin(theta)
 R3z = sym.Matrix([[1, 0, 0],[0,  sym.cos(psi),-sym.sin(psi)],[0,sym.sin(psi), sym.cos(psi)]])
 
 R = R1z*R2y*R3z
-R.subs([theta:0])
+
 

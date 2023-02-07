@@ -14,7 +14,6 @@ from Parameter import *
     
 def model_nlin(t,x,controller):
 
-
     """ Extendend Nonlinear System Model
         Params
          --------
@@ -43,8 +42,8 @@ def model_nlin(t,x,controller):
         u = controller.u        
         
     u1,u2,u3 = u[0], u[1], u[2]  
-    x[9] = controller.fx  
-    fx = x[9]
+    fx = controller.fx  
+    x[9] = fx
     
 
     dx[0] = qd1
@@ -62,7 +61,6 @@ def model_nlin(t,x,controller):
     
     # Änderung Kraftvektor
     #dx[9] = controller.fq
-
      
     
     # Zwischenspeichern der Beschleunigungen
@@ -74,7 +72,6 @@ def model_nlin(t,x,controller):
 ##  
 ######## ***************************************  
 def ctr_multi_ext(t,x,ctr,dx):
-
     
     """ Extendend Nonlinear System Model
         Params
@@ -111,9 +108,30 @@ def ctr_multi_ext(t,x,ctr,dx):
     
     # controller 
     # Positionsregler für [y,Psi]
-    ax =  xdd_soll - ctr.k1@([X[1,1],X[-1,1]]- xd_soll) -ctr.k0@([X[1,0],X[-1,0]]-x_soll)
+    ax1 =  xdd_soll - ctr.k1@([X[1,1],X[-1,1]]- xd_soll) -ctr.k0@([X[1,0],X[-1,0]]-x_soll)     
+    ax = [0, ax1[0],0,0,0,ax1[1]] 
+
     # Kraftregler
+    # Anteil der externen Kraft
+    if X[0,0]>ctr.xw:
+        fx = ctr.kf*(X[0,0]-ctr.xw)
+        ctr.force = True        
+    else: 
+        fx = 0
+        ctr.force = False
+    
+    ctr.fx = fx
+
+    
     #ax+ = 
+    f_tilde = ctr.kb*(X[0,1]-0) + ctr.kd*(X[0,0] - ctr.xw) + fx 
+
+    F = np.array([f_tilde,0,0, 0,0,0])
+    W = Ja(x)@M_inv(x)@Ja(x).T
+    ax -= W@F
+    af = np.array([ctr.f,0,0, 0,0,0])
+
+    
 
     
     # Transfromation vom Arbeits in den Gelenksraum
@@ -128,21 +146,7 @@ def ctr_multi_ext(t,x,ctr,dx):
     u[1] = (R2*(aq1*(I2 + I3 + l1*l2*m3*cos(q2) + l1*l_s2*m2*cos(q2) + l1*l_s3*m3*cos(q2 + q3) + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3) + aq2*(I2 + I3 + J2*r2**2 + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3) + aq3*(I3 + l2*l_s3*m3*cos(q3) + l_s3**2*m3) + g*(l_s2*m2*cos(q1 + q2) + m3*(l2*cos(q1 + q2) + l_s3*cos(q1 + q2 + q3))) - 1.0*l2*l_s3*m3*qd3*(qd1 + qd2 + qd3)*sin(q3) + 1.0*qd1*(l1*qd1*(l2*m3*sin(q2) + l_s2*m2*sin(q2) + l_s3*m3*sin(q2 + q3)) - l2*l_s3*m3*qd3*sin(q3))) + qd2*(R2*(B2*r2**2 - 1.0*l2*l_s3*m3*qd3*sin(q3)) + kb2*km2))/R2
     u[2] = (R3*(aq1*(I3 + l1*l_s3*m3*cos(q2 + q3) + l2*l_s3*m3*cos(q3) + l_s3**2*m3) + aq2*(I3 + l2*l_s3*m3*cos(q3) + l_s3**2*m3) + aq3*(I3 + J3*r3**2 + l_s3**2*m3) + g*l_s3*m3*cos(q1 + q2 + q3) + 1.0*l2*l_s3*m3*qd2*(qd1 + qd2)*sin(q3) + 1.0*l_s3*m3*qd1*(l2*qd2*sin(q3) + qd1*(l1*sin(q2 + q3) + l2*sin(q3)))) + qd3*(B3*R3*r3**2 + kb3*km3))/R3
 
-    # Anteil der externen Kraft
-    if X[0,0]>ctr.xw:
-        fx = ctr.kf*(X[0,0]-ctr.xw)
-        ctr.force = True        
-    else: 
-        fx = 0
-        ctr.force = False
-    
-    ctr.fx = fx
-
-    F = np.array([fx,0,0, 0,0,0])
-
-    #ctr.fq = 0 #Ja(x).T@F                  # Kompensation der aufgebrachten Kraft
-    
-    
+    #u += Ja(x).T@af
     return u
 
 
@@ -152,6 +156,17 @@ def ctr_multi_ext(t,x,ctr,dx):
 ##         TRANSFORMATION    
 ##  
 ######## ***************************************  
+
+def M_inv(x):
+    
+    q1, q2, q3 = x[0],x[1],x[2] 
+
+
+    Minv =  np.array([ [ ((I3 + J3*r3**2 + l_s3**2*m3)*(I2 + I3 + J2*r2**2 + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3) - (I3 + l2*l_s3*m3*cos(q3) + l_s3**2*m3)**2)/((I3 + J3*r3**2 + l_s3**2*m3)*(I2 + I3 + J2*r2**2 + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3)*(I1 + I2 + I3 + J1*r1**2 + l1**2*m2 + l1**2*m3 + 2*l1*l2*m3*cos(q2) + 2*l1*l_s2*m2*cos(q2) + 2*l1*l_s3*m3*cos(q2 + q3) + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s1**2*m1 + l_s2**2*m2 + l_s3**2*m3) - (I3 + J3*r3**2 + l_s3**2*m3)*(I2 + I3 + l1*l2*m3*cos(q2) + l1*l_s2*m2*cos(q2) + l1*l_s3*m3*cos(q2 + q3) + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3)**2 - (I3 + l2*l_s3*m3*cos(q3) + l_s3**2*m3)**2*(I1 + I2 + I3 + J1*r1**2 + l1**2*m2 + l1**2*m3 + 2*l1*l2*m3*cos(q2) + 2*l1*l_s2*m2*cos(q2) + 2*l1*l_s3*m3*cos(q2 + q3) + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s1**2*m1 + l_s2**2*m2 + l_s3**2*m3) + 2*(I3 + l2*l_s3*m3*cos(q3) + l_s3**2*m3)*(I3 + l1*l_s3*m3*cos(q2 + q3) + l2*l_s3*m3*cos(q3) + l_s3**2*m3)*(I2 + I3 + l1*l2*m3*cos(q2) + l1*l_s2*m2*cos(q2) + l1*l_s3*m3*cos(q2 + q3) + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3) - (I3 + l1*l_s3*m3*cos(q2 + q3) + l2*l_s3*m3*cos(q3) + l_s3**2*m3)**2*(I2 + I3 + J2*r2**2 + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3)),                                                                                                                                                                     (-(I3 + J3*r3**2 + l_s3**2*m3)*(I2 + I3 + l1*l2*m3*cos(q2) + l1*l_s2*m2*cos(q2) + l1*l_s3*m3*cos(q2 + q3) + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3) + (I3 + l2*l_s3*m3*cos(q3) + l_s3**2*m3)*(I3 + l1*l_s3*m3*cos(q2 + q3) + l2*l_s3*m3*cos(q3) + l_s3**2*m3))/((I3 + J3*r3**2 + l_s3**2*m3)*(I2 + I3 + J2*r2**2 + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3)*(I1 + I2 + I3 + J1*r1**2 + l1**2*m2 + l1**2*m3 + 2*l1*l2*m3*cos(q2) + 2*l1*l_s2*m2*cos(q2) + 2*l1*l_s3*m3*cos(q2 + q3) + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s1**2*m1 + l_s2**2*m2 + l_s3**2*m3) - (I3 + J3*r3**2 + l_s3**2*m3)*(I2 + I3 + l1*l2*m3*cos(q2) + l1*l_s2*m2*cos(q2) + l1*l_s3*m3*cos(q2 + q3) + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3)**2 - (I3 + l2*l_s3*m3*cos(q3) + l_s3**2*m3)**2*(I1 + I2 + I3 + J1*r1**2 + l1**2*m2 + l1**2*m3 + 2*l1*l2*m3*cos(q2) + 2*l1*l_s2*m2*cos(q2) + 2*l1*l_s3*m3*cos(q2 + q3) + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s1**2*m1 + l_s2**2*m2 + l_s3**2*m3) + 2*(I3 + l2*l_s3*m3*cos(q3) + l_s3**2*m3)*(I3 + l1*l_s3*m3*cos(q2 + q3) + l2*l_s3*m3*cos(q3) + l_s3**2*m3)*(I2 + I3 + l1*l2*m3*cos(q2) + l1*l_s2*m2*cos(q2) + l1*l_s3*m3*cos(q2 + q3) + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3) - (I3 + l1*l_s3*m3*cos(q2 + q3) + l2*l_s3*m3*cos(q3) + l_s3**2*m3)**2*(I2 + I3 + J2*r2**2 + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3)),                                                                                                                  ((I3 + l2*l_s3*m3*cos(q3) + l_s3**2*m3)*(I2 + I3 + l1*l2*m3*cos(q2) + l1*l_s2*m2*cos(q2) + l1*l_s3*m3*cos(q2 + q3) + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3) - (I3 + l1*l_s3*m3*cos(q2 + q3) + l2*l_s3*m3*cos(q3) + l_s3**2*m3)*(I2 + I3 + J2*r2**2 + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3))/((I3 + J3*r3**2 + l_s3**2*m3)*(I2 + I3 + J2*r2**2 + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3)*(I1 + I2 + I3 + J1*r1**2 + l1**2*m2 + l1**2*m3 + 2*l1*l2*m3*cos(q2) + 2*l1*l_s2*m2*cos(q2) + 2*l1*l_s3*m3*cos(q2 + q3) + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s1**2*m1 + l_s2**2*m2 + l_s3**2*m3) - (I3 + J3*r3**2 + l_s3**2*m3)*(I2 + I3 + l1*l2*m3*cos(q2) + l1*l_s2*m2*cos(q2) + l1*l_s3*m3*cos(q2 + q3) + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3)**2 - (I3 + l2*l_s3*m3*cos(q3) + l_s3**2*m3)**2*(I1 + I2 + I3 + J1*r1**2 + l1**2*m2 + l1**2*m3 + 2*l1*l2*m3*cos(q2) + 2*l1*l_s2*m2*cos(q2) + 2*l1*l_s3*m3*cos(q2 + q3) + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s1**2*m1 + l_s2**2*m2 + l_s3**2*m3) + 2*(I3 + l2*l_s3*m3*cos(q3) + l_s3**2*m3)*(I3 + l1*l_s3*m3*cos(q2 + q3) + l2*l_s3*m3*cos(q3) + l_s3**2*m3)*(I2 + I3 + l1*l2*m3*cos(q2) + l1*l_s2*m2*cos(q2) + l1*l_s3*m3*cos(q2 + q3) + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3) - (I3 + l1*l_s3*m3*cos(q2 + q3) + l2*l_s3*m3*cos(q3) + l_s3**2*m3)**2*(I2 + I3 + J2*r2**2 + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3))],
+                      [ (-(I3 + J3*r3**2 + l_s3**2*m3)*(I2 + I3 + l1*l2*m3*cos(q2) + l1*l_s2*m2*cos(q2) + l1*l_s3*m3*cos(q2 + q3) + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3) + (I3 + l2*l_s3*m3*cos(q3) + l_s3**2*m3)*(I3 + l1*l_s3*m3*cos(q2 + q3) + l2*l_s3*m3*cos(q3) + l_s3**2*m3))/((I3 + J3*r3**2 + l_s3**2*m3)*(I2 + I3 + J2*r2**2 + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3)*(I1 + I2 + I3 + J1*r1**2 + l1**2*m2 + l1**2*m3 + 2*l1*l2*m3*cos(q2) + 2*l1*l_s2*m2*cos(q2) + 2*l1*l_s3*m3*cos(q2 + q3) + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s1**2*m1 + l_s2**2*m2 + l_s3**2*m3) - (I3 + J3*r3**2 + l_s3**2*m3)*(I2 + I3 + l1*l2*m3*cos(q2) + l1*l_s2*m2*cos(q2) + l1*l_s3*m3*cos(q2 + q3) + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3)**2 - (I3 + l2*l_s3*m3*cos(q3) + l_s3**2*m3)**2*(I1 + I2 + I3 + J1*r1**2 + l1**2*m2 + l1**2*m3 + 2*l1*l2*m3*cos(q2) + 2*l1*l_s2*m2*cos(q2) + 2*l1*l_s3*m3*cos(q2 + q3) + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s1**2*m1 + l_s2**2*m2 + l_s3**2*m3) + 2*(I3 + l2*l_s3*m3*cos(q3) + l_s3**2*m3)*(I3 + l1*l_s3*m3*cos(q2 + q3) + l2*l_s3*m3*cos(q3) + l_s3**2*m3)*(I2 + I3 + l1*l2*m3*cos(q2) + l1*l_s2*m2*cos(q2) + l1*l_s3*m3*cos(q2 + q3) + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3) - (I3 + l1*l_s3*m3*cos(q2 + q3) + l2*l_s3*m3*cos(q3) + l_s3**2*m3)**2*(I2 + I3 + J2*r2**2 + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3)),                                                                                                                                                 ((I3 + J3*r3**2 + l_s3**2*m3)*(I1 + I2 + I3 + J1*r1**2 + l1**2*m2 + l1**2*m3 + 2*l1*l2*m3*cos(q2) + 2*l1*l_s2*m2*cos(q2) + 2*l1*l_s3*m3*cos(q2 + q3) + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s1**2*m1 + l_s2**2*m2 + l_s3**2*m3) - (I3 + l1*l_s3*m3*cos(q2 + q3) + l2*l_s3*m3*cos(q3) + l_s3**2*m3)**2)/((I3 + J3*r3**2 + l_s3**2*m3)*(I2 + I3 + J2*r2**2 + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3)*(I1 + I2 + I3 + J1*r1**2 + l1**2*m2 + l1**2*m3 + 2*l1*l2*m3*cos(q2) + 2*l1*l_s2*m2*cos(q2) + 2*l1*l_s3*m3*cos(q2 + q3) + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s1**2*m1 + l_s2**2*m2 + l_s3**2*m3) - (I3 + J3*r3**2 + l_s3**2*m3)*(I2 + I3 + l1*l2*m3*cos(q2) + l1*l_s2*m2*cos(q2) + l1*l_s3*m3*cos(q2 + q3) + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3)**2 - (I3 + l2*l_s3*m3*cos(q3) + l_s3**2*m3)**2*(I1 + I2 + I3 + J1*r1**2 + l1**2*m2 + l1**2*m3 + 2*l1*l2*m3*cos(q2) + 2*l1*l_s2*m2*cos(q2) + 2*l1*l_s3*m3*cos(q2 + q3) + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s1**2*m1 + l_s2**2*m2 + l_s3**2*m3) + 2*(I3 + l2*l_s3*m3*cos(q3) + l_s3**2*m3)*(I3 + l1*l_s3*m3*cos(q2 + q3) + l2*l_s3*m3*cos(q3) + l_s3**2*m3)*(I2 + I3 + l1*l2*m3*cos(q2) + l1*l_s2*m2*cos(q2) + l1*l_s3*m3*cos(q2 + q3) + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3) - (I3 + l1*l_s3*m3*cos(q2 + q3) + l2*l_s3*m3*cos(q3) + l_s3**2*m3)**2*(I2 + I3 + J2*r2**2 + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3)), (-(I3 + l2*l_s3*m3*cos(q3) + l_s3**2*m3)*(I1 + I2 + I3 + J1*r1**2 + l1**2*m2 + l1**2*m3 + 2*l1*l2*m3*cos(q2) + 2*l1*l_s2*m2*cos(q2) + 2*l1*l_s3*m3*cos(q2 + q3) + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s1**2*m1 + l_s2**2*m2 + l_s3**2*m3) + (I3 + l1*l_s3*m3*cos(q2 + q3) + l2*l_s3*m3*cos(q3) + l_s3**2*m3)*(I2 + I3 + l1*l2*m3*cos(q2) + l1*l_s2*m2*cos(q2) + l1*l_s3*m3*cos(q2 + q3) + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3))/((I3 + J3*r3**2 + l_s3**2*m3)*(I2 + I3 + J2*r2**2 + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3)*(I1 + I2 + I3 + J1*r1**2 + l1**2*m2 + l1**2*m3 + 2*l1*l2*m3*cos(q2) + 2*l1*l_s2*m2*cos(q2) + 2*l1*l_s3*m3*cos(q2 + q3) + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s1**2*m1 + l_s2**2*m2 + l_s3**2*m3) - (I3 + J3*r3**2 + l_s3**2*m3)*(I2 + I3 + l1*l2*m3*cos(q2) + l1*l_s2*m2*cos(q2) + l1*l_s3*m3*cos(q2 + q3) + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3)**2 - (I3 + l2*l_s3*m3*cos(q3) + l_s3**2*m3)**2*(I1 + I2 + I3 + J1*r1**2 + l1**2*m2 + l1**2*m3 + 2*l1*l2*m3*cos(q2) + 2*l1*l_s2*m2*cos(q2) + 2*l1*l_s3*m3*cos(q2 + q3) + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s1**2*m1 + l_s2**2*m2 + l_s3**2*m3) + 2*(I3 + l2*l_s3*m3*cos(q3) + l_s3**2*m3)*(I3 + l1*l_s3*m3*cos(q2 + q3) + l2*l_s3*m3*cos(q3) + l_s3**2*m3)*(I2 + I3 + l1*l2*m3*cos(q2) + l1*l_s2*m2*cos(q2) + l1*l_s3*m3*cos(q2 + q3) + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3) - (I3 + l1*l_s3*m3*cos(q2 + q3) + l2*l_s3*m3*cos(q3) + l_s3**2*m3)**2*(I2 + I3 + J2*r2**2 + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3))],
+                      [((I3 + l2*l_s3*m3*cos(q3) + l_s3**2*m3)*(I2 + I3 + l1*l2*m3*cos(q2) + l1*l_s2*m2*cos(q2) + l1*l_s3*m3*cos(q2 + q3) + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3) - (I3 + l1*l_s3*m3*cos(q2 + q3) + l2*l_s3*m3*cos(q3) + l_s3**2*m3)*(I2 + I3 + J2*r2**2 + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3))/((I3 + J3*r3**2 + l_s3**2*m3)*(I2 + I3 + J2*r2**2 + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3)*(I1 + I2 + I3 + J1*r1**2 + l1**2*m2 + l1**2*m3 + 2*l1*l2*m3*cos(q2) + 2*l1*l_s2*m2*cos(q2) + 2*l1*l_s3*m3*cos(q2 + q3) + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s1**2*m1 + l_s2**2*m2 + l_s3**2*m3) - (I3 + J3*r3**2 + l_s3**2*m3)*(I2 + I3 + l1*l2*m3*cos(q2) + l1*l_s2*m2*cos(q2) + l1*l_s3*m3*cos(q2 + q3) + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3)**2 - (I3 + l2*l_s3*m3*cos(q3) + l_s3**2*m3)**2*(I1 + I2 + I3 + J1*r1**2 + l1**2*m2 + l1**2*m3 + 2*l1*l2*m3*cos(q2) + 2*l1*l_s2*m2*cos(q2) + 2*l1*l_s3*m3*cos(q2 + q3) + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s1**2*m1 + l_s2**2*m2 + l_s3**2*m3) + 2*(I3 + l2*l_s3*m3*cos(q3) + l_s3**2*m3)*(I3 + l1*l_s3*m3*cos(q2 + q3) + l2*l_s3*m3*cos(q3) + l_s3**2*m3)*(I2 + I3 + l1*l2*m3*cos(q2) + l1*l_s2*m2*cos(q2) + l1*l_s3*m3*cos(q2 + q3) + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3) - (I3 + l1*l_s3*m3*cos(q2 + q3) + l2*l_s3*m3*cos(q3) + l_s3**2*m3)**2*(I2 + I3 + J2*r2**2 + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3)), (-(I3 + l2*l_s3*m3*cos(q3) + l_s3**2*m3)*(I1 + I2 + I3 + J1*r1**2 + l1**2*m2 + l1**2*m3 + 2*l1*l2*m3*cos(q2) + 2*l1*l_s2*m2*cos(q2) + 2*l1*l_s3*m3*cos(q2 + q3) + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s1**2*m1 + l_s2**2*m2 + l_s3**2*m3) + (I3 + l1*l_s3*m3*cos(q2 + q3) + l2*l_s3*m3*cos(q3) + l_s3**2*m3)*(I2 + I3 + l1*l2*m3*cos(q2) + l1*l_s2*m2*cos(q2) + l1*l_s3*m3*cos(q2 + q3) + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3))/((I3 + J3*r3**2 + l_s3**2*m3)*(I2 + I3 + J2*r2**2 + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3)*(I1 + I2 + I3 + J1*r1**2 + l1**2*m2 + l1**2*m3 + 2*l1*l2*m3*cos(q2) + 2*l1*l_s2*m2*cos(q2) + 2*l1*l_s3*m3*cos(q2 + q3) + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s1**2*m1 + l_s2**2*m2 + l_s3**2*m3) - (I3 + J3*r3**2 + l_s3**2*m3)*(I2 + I3 + l1*l2*m3*cos(q2) + l1*l_s2*m2*cos(q2) + l1*l_s3*m3*cos(q2 + q3) + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3)**2 - (I3 + l2*l_s3*m3*cos(q3) + l_s3**2*m3)**2*(I1 + I2 + I3 + J1*r1**2 + l1**2*m2 + l1**2*m3 + 2*l1*l2*m3*cos(q2) + 2*l1*l_s2*m2*cos(q2) + 2*l1*l_s3*m3*cos(q2 + q3) + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s1**2*m1 + l_s2**2*m2 + l_s3**2*m3) + 2*(I3 + l2*l_s3*m3*cos(q3) + l_s3**2*m3)*(I3 + l1*l_s3*m3*cos(q2 + q3) + l2*l_s3*m3*cos(q3) + l_s3**2*m3)*(I2 + I3 + l1*l2*m3*cos(q2) + l1*l_s2*m2*cos(q2) + l1*l_s3*m3*cos(q2 + q3) + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3) - (I3 + l1*l_s3*m3*cos(q2 + q3) + l2*l_s3*m3*cos(q3) + l_s3**2*m3)**2*(I2 + I3 + J2*r2**2 + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3)),                      ((I2 + I3 + J2*r2**2 + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3)*(I1 + I2 + I3 + J1*r1**2 + l1**2*m2 + l1**2*m3 + 2*l1*l2*m3*cos(q2) + 2*l1*l_s2*m2*cos(q2) + 2*l1*l_s3*m3*cos(q2 + q3) + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s1**2*m1 + l_s2**2*m2 + l_s3**2*m3) - (I2 + I3 + l1*l2*m3*cos(q2) + l1*l_s2*m2*cos(q2) + l1*l_s3*m3*cos(q2 + q3) + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3)**2)/((I3 + J3*r3**2 + l_s3**2*m3)*(I2 + I3 + J2*r2**2 + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3)*(I1 + I2 + I3 + J1*r1**2 + l1**2*m2 + l1**2*m3 + 2*l1*l2*m3*cos(q2) + 2*l1*l_s2*m2*cos(q2) + 2*l1*l_s3*m3*cos(q2 + q3) + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s1**2*m1 + l_s2**2*m2 + l_s3**2*m3) - (I3 + J3*r3**2 + l_s3**2*m3)*(I2 + I3 + l1*l2*m3*cos(q2) + l1*l_s2*m2*cos(q2) + l1*l_s3*m3*cos(q2 + q3) + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3)**2 - (I3 + l2*l_s3*m3*cos(q3) + l_s3**2*m3)**2*(I1 + I2 + I3 + J1*r1**2 + l1**2*m2 + l1**2*m3 + 2*l1*l2*m3*cos(q2) + 2*l1*l_s2*m2*cos(q2) + 2*l1*l_s3*m3*cos(q2 + q3) + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s1**2*m1 + l_s2**2*m2 + l_s3**2*m3) + 2*(I3 + l2*l_s3*m3*cos(q3) + l_s3**2*m3)*(I3 + l1*l_s3*m3*cos(q2 + q3) + l2*l_s3*m3*cos(q3) + l_s3**2*m3)*(I2 + I3 + l1*l2*m3*cos(q2) + l1*l_s2*m2*cos(q2) + l1*l_s3*m3*cos(q2 + q3) + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3) - (I3 + l1*l_s3*m3*cos(q2 + q3) + l2*l_s3*m3*cos(q3) + l_s3**2*m3)**2*(I2 + I3 + J2*r2**2 + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3))]])
+    return Minv
+
 
 def Ja(x):
     """ Transformation from the Joinspace velocity to kartesian verlocity
@@ -166,13 +181,11 @@ def Ja(x):
                 
     """
     
-    q1  = x[0]
-    q2  = x[1]
-    q3  = x[2]
+    q1, q2, q3 = x[0],x[1],x[2] 
   
 
 
-    Ja = sym.Matrix([[-l1*sin(q1) - l2*sin(q1 + q2) - l_s3*sin(q1 + q2 + q3), -l2*sin(q1 + q2) - l_s3*sin(q1 + q2 + q3), -l_s3*sin(q1 + q2 + q3)],
+    Ja = np.array([[-l1*sin(q1) - l2*sin(q1 + q2) - l_s3*sin(q1 + q2 + q3), -l2*sin(q1 + q2) - l_s3*sin(q1 + q2 + q3), -l_s3*sin(q1 + q2 + q3)],
                     [ l1*cos(q1) + l2*cos(q1 + q2) + l_s3*cos(q1 + q2 + q3),  l2*cos(q1 + q2) + l_s3*cos(q1 + q2 + q3),  l_s3*cos(q1 + q2 + q3)],
                     [                                                     0,                                         0,                       0],
                     [                                                     0,                                         0,                       0],
@@ -230,7 +243,7 @@ def Ja_diff(x):
     q1,q2,q3,qd1,qd2,qd3  = x[0],x[1],x[2],x[3],x[4],x[5]
    
 
-    Ja_diff = sym.Matrix([[-l1*qd1*cos(q1) - l2*qd1*cos(q1 + q2) - l2*qd2*cos(q1 + q2) - l_s3*qd1*cos(q1 + q2 + q3) - l_s3*qd2*cos(q1 + q2 + q3) - l_s3*cos(q1 + q2 + q3), -l2*qd1*cos(q1 + q2) - l2*qd2*cos(q1 + q2) - l_s3*qd1*cos(q1 + q2 + q3) - l_s3*qd2*cos(q1 + q2 + q3) - l_s3*cos(q1 + q2 + q3), -l_s3*(qd1 + qd2 + 1)*cos(q1 + q2 + q3)],
+    Ja_diff = np.array([[-l1*qd1*cos(q1) - l2*qd1*cos(q1 + q2) - l2*qd2*cos(q1 + q2) - l_s3*qd1*cos(q1 + q2 + q3) - l_s3*qd2*cos(q1 + q2 + q3) - l_s3*cos(q1 + q2 + q3), -l2*qd1*cos(q1 + q2) - l2*qd2*cos(q1 + q2) - l_s3*qd1*cos(q1 + q2 + q3) - l_s3*qd2*cos(q1 + q2 + q3) - l_s3*cos(q1 + q2 + q3), -l_s3*(qd1 + qd2 + 1)*cos(q1 + q2 + q3)],
                           [-l1*qd1*sin(q1) - l2*qd1*sin(q1 + q2) - l2*qd2*sin(q1 + q2) - l_s3*qd1*sin(q1 + q2 + q3) - l_s3*qd2*sin(q1 + q2 + q3) - l_s3*sin(q1 + q2 + q3), -l2*qd1*sin(q1 + q2) - l2*qd2*sin(q1 + q2) - l_s3*qd1*sin(q1 + q2 + q3) - l_s3*qd2*sin(q1 + q2 + q3) - l_s3*sin(q1 + q2 + q3), -l_s3*(qd1 + qd2 + 1)*sin(q1 + q2 + q3)],
                           [                                                                                                                                             0,                                                                                                                             0,                                       0],
                           [                                                                                                                                             0,                                                                                                                             0,                                       0],
@@ -258,8 +271,7 @@ def transform_K_to_J(x,ax):
 
     qx = np.array(x[3:6])   
     
-    ax = np.array([[0,ax[0],0,0,0,ax[0]]])
-        
+    ax = np.array(ax)        
 
     T = (ax-Ja_diff(x)@qx)  
     
@@ -294,15 +306,18 @@ def transform_J_to_K(x):
     qx[1] = T0e[1]                      # y
     qx[3] = 0                           # Psi
     qx[4] = 0                           # Theta
-    qx[5] = q1+q2+q3    #np.arccos(T0e[0,1])           # Phi
+    qx[5] = (q1+q2+q3)    #np.arccos(T0e[0,1])           # Phi
+    # Kürzen der Überschüssigen vielfachen
+    while abs(qx[5]) > 2*np.pi:
+        if qx[5] > 0:
+            qx[5] -= (2*np.pi)
+        else: qx[5] += (2*np.pi)
+    
 
     v     = Ja(x)@qd                         # Geschwindigkeit  
     a     = Ja(x)@qdd + Ja_diff(x)@qd        # Beschleunigung
 
     
     return np.vstack((qx,v,a)).T
-
-
-
 
 # %%
