@@ -3,6 +3,8 @@ Date: 20.12.2022
 Author: Kaufmann Stefan
 
 Kinematik 3R Roboter
+
+Die nachfolgende Datei beinhaltet alle Symbolischen Berechnungen, welche zur Lösung der Regelungsaufgabe benötigt wurden.
 """
 
 
@@ -58,10 +60,6 @@ Jw_02 = Jw_02.row_join(T02*sym.Matrix([0, 0, 0, 0]))
 Jw_01 = Jw_01[1:4,:]
 Jw_02 = Jw_02[1:4,:]
 Jw_03 = Jw_03[1:4,:]
-
-
-
-
 
 
 # Substitueren mit den Parametern
@@ -227,7 +225,7 @@ Ja*M_inv*Ja.T
 
 
 ######## ***************************************  
-## 12.  Bestimmen der Rotationsmatrix
+## 12.  Bestimmen der Rotationsmatrix  --> für die Berechnung der Winkel 
 ######## ***************************************  
 phi, theta, psi = sym.symbols("phi, theta, psi")
 R1z = sym.Matrix([[1, 0, 0],[0,  sym.cos(phi),-sym.sin(phi)],[0,sym.sin(phi), sym.cos(phi)]])
