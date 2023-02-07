@@ -99,6 +99,8 @@ def ctr_multi_ext(t,x,ctr,dx):
     # Transformation vom Gelenkraum in den Arbeitsraum
     X = transform_J_to_K(x)
 
+    
+
 
     '''   ARBEITSRAUM    '''
     x_soll =   np.array(ax_soll[0:2])
@@ -106,33 +108,31 @@ def ctr_multi_ext(t,x,ctr,dx):
     xdd_soll = np.array(ax_soll[4:6])
 
     
-    # controller 
+    '''Positionsregler'''
     # Positionsregler für [y,Psi]
     ax1 =  xdd_soll - ctr.k1@([X[1,1],X[-1,1]]- xd_soll) -ctr.k0@([X[1,0],X[-1,0]]-x_soll)     
     ax = [0, ax1[0],0,0,0,ax1[1]] 
 
-    # Kraftregler
+    
+    ''' Kraftregler'''
     # Anteil der externen Kraft
     if X[0,0]>ctr.xw:
-        fx = ctr.kf*(X[0,0]-ctr.xw)
-        ctr.force = True        
+        fx = ctr.kf*(X[0,0]-ctr.xw)               
     else: 
-        fx = 0
-        ctr.force = False
+        fx = 0        
     
     ctr.fx = fx
+   
 
+    xdd = -ctr.kb*(X[0,1]- 0) - ctr.kd*(fx - ctr.fsoll)
+
+    F   = np.array([fx,0,0, 0,0,0])
+    af  = np.array([ctr.fsoll,0,0, 0,0,0])
+    W   = Ja(x)@M_inv(x)@Ja(x).T    
+    ax -= W@(F-af)*0  
+    ax[0] += xdd                               # addition in den x Eintrag 
     
-    #ax+ = 
-    f_tilde = ctr.kb*(X[0,1]-0) + ctr.kd*(X[0,0] - ctr.xw) + fx 
-
-    F = np.array([f_tilde,0,0, 0,0,0])
-    W = Ja(x)@M_inv(x)@Ja(x).T
-    ax -= W@F
-    af = np.array([ctr.f,0,0, 0,0,0])
-
     
-
     
     # Transfromation vom Arbeits in den Gelenksraum
     aq = transform_K_to_J(x,ax)
@@ -145,8 +145,9 @@ def ctr_multi_ext(t,x,ctr,dx):
     u[0] = B1*qd1*r1**2 + 1.0*I1*aq1 + 1.0*I2*aq1 + 1.0*I2*aq2 + 1.0*I3*aq1 + 1.0*I3*aq2 + 1.0*I3*aq3 + 1.0*J1*aq1*r1**2 + 1.0*aq1*l1**2*m2 + 1.0*aq1*l1**2*m3 + 2.0*aq1*l1*l2*m3*cos(q2) + 2.0*aq1*l1*l_s2*m2*cos(q2) + 2.0*aq1*l1*l_s3*m3*cos(q2 + q3) + 1.0*aq1*l2**2*m3 + 2.0*aq1*l2*l_s3*m3*cos(q3) + 1.0*aq1*l_s1**2*m1 + 1.0*aq1*l_s2**2*m2 + 1.0*aq1*l_s3**2*m3 + 1.0*aq2*l1*l2*m3*cos(q2) + 1.0*aq2*l1*l_s2*m2*cos(q2) + 1.0*aq2*l1*l_s3*m3*cos(q2 + q3) + 1.0*aq2*l2**2*m3 + 2.0*aq2*l2*l_s3*m3*cos(q3) + 1.0*aq2*l_s2**2*m2 + 1.0*aq2*l_s3**2*m3 + 1.0*aq3*l1*l_s3*m3*cos(q2 + q3) + 1.0*aq3*l2*l_s3*m3*cos(q3) + 1.0*aq3*l_s3**2*m3 + 1.0*g*l1*m2*cos(q1) + 1.0*g*l1*m3*cos(q1) + 1.0*g*l2*m3*cos(q1 + q2) + 1.0*g*l_s1*m1*cos(q1) + 1.0*g*l_s2*m2*cos(q1 + q2) + 1.0*g*l_s3*m3*cos(q1 + q2 + q3) - 2.0*l1*l2*m3*qd1*qd2*sin(q2) - 1.0*l1*l2*m3*qd2**2*sin(q2) - 2.0*l1*l_s2*m2*qd1*qd2*sin(q2) - 1.0*l1*l_s2*m2*qd2**2*sin(q2) - 2.0*l1*l_s3*m3*qd1*qd2*sin(q2 + q3) - 2.0*l1*l_s3*m3*qd1*qd3*sin(q2 + q3) - 1.0*l1*l_s3*m3*qd2**2*sin(q2 + q3) - 2.0*l1*l_s3*m3*qd2*qd3*sin(q2 + q3) - 1.0*l1*l_s3*m3*qd3**2*sin(q2 + q3) - 2.0*l2*l_s3*m3*qd1*qd3*sin(q3) - 2.0*l2*l_s3*m3*qd2*qd3*sin(q3) - 1.0*l2*l_s3*m3*qd3**2*sin(q3) + 1.0*kb1*km1*qd1/R1
     u[1] = (R2*(aq1*(I2 + I3 + l1*l2*m3*cos(q2) + l1*l_s2*m2*cos(q2) + l1*l_s3*m3*cos(q2 + q3) + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3) + aq2*(I2 + I3 + J2*r2**2 + l2**2*m3 + 2*l2*l_s3*m3*cos(q3) + l_s2**2*m2 + l_s3**2*m3) + aq3*(I3 + l2*l_s3*m3*cos(q3) + l_s3**2*m3) + g*(l_s2*m2*cos(q1 + q2) + m3*(l2*cos(q1 + q2) + l_s3*cos(q1 + q2 + q3))) - 1.0*l2*l_s3*m3*qd3*(qd1 + qd2 + qd3)*sin(q3) + 1.0*qd1*(l1*qd1*(l2*m3*sin(q2) + l_s2*m2*sin(q2) + l_s3*m3*sin(q2 + q3)) - l2*l_s3*m3*qd3*sin(q3))) + qd2*(R2*(B2*r2**2 - 1.0*l2*l_s3*m3*qd3*sin(q3)) + kb2*km2))/R2
     u[2] = (R3*(aq1*(I3 + l1*l_s3*m3*cos(q2 + q3) + l2*l_s3*m3*cos(q3) + l_s3**2*m3) + aq2*(I3 + l2*l_s3*m3*cos(q3) + l_s3**2*m3) + aq3*(I3 + J3*r3**2 + l_s3**2*m3) + g*l_s3*m3*cos(q1 + q2 + q3) + 1.0*l2*l_s3*m3*qd2*(qd1 + qd2)*sin(q3) + 1.0*l_s3*m3*qd1*(l2*qd2*sin(q3) + qd1*(l1*sin(q2 + q3) + l2*sin(q3)))) + qd3*(B3*R3*r3**2 + kb3*km3))/R3
-
-    #u += Ja(x).T@af
+    
+    # Anteil aus der Kraftregelung mit Umrechnung in den Gelenksraum 
+    u += Ja(x).T@af
     return u
 
 
@@ -320,4 +321,4 @@ def transform_J_to_K(x):
     
     return np.vstack((qx,v,a)).T
 
-# %%
+
