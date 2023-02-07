@@ -211,3 +211,27 @@ aq = sym.Matrix([aq1,aq2,aq3])
 # Inverse Regelungsfunktion
 #u_regler_ext = sym.simplify(M*aq+(C+B+R)*qd +gv.T)
 u_regler_ext = M*aq+(C+B+R)*qd +gv.T
+
+
+######## ***************************************  
+## 11.  Kraftregelung
+######## ***************************************  
+# Angepasstes Modell
+fx = sym.symbols("fx")
+F = sym.Matrix([fx,0,0, 0,0,0])
+
+
+qdd_ext_force = M_inv*(tau-(C+B+R)*qd - gv.T - Ja*F)
+
+
+######## ***************************************  
+## 12.  Bestimmen der Rotationsmatrix
+######## ***************************************  
+phi, theta, psi = sym.symbols("phi, theta, psi")
+R1z = sym.Matrix([[1, 0, 0],[0,  sym.cos(phi),-sym.sin(phi)],[0,sym.sin(phi), sym.cos(phi)]])
+R2y = sym.Matrix([[sym.cos(theta), 0, sym.sin(theta)],[0, 1, 0],[-sym.sin(theta), 0, sym.cos(theta)]])
+R3z = sym.Matrix([[1, 0, 0],[0,  sym.cos(psi),-sym.sin(psi)],[0,sym.sin(psi), sym.cos(psi)]])
+
+R = R1z*R2y*R3z
+R.subs([theta:0])
+

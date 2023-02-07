@@ -449,10 +449,10 @@ def tra_K_to_J(x,ax):
                 
     """
 
-    axx = sym.Matrix.vstack(ax,sym.zeros(4,1))
+    axx = sym.Matrix.vstack(x[2:4],sym.zeros(4,1))
     
     
-    aq = Ja_inv(x).T*((ax-np.dot(Ja_diff(x).T,axx)))
+    aq = Ja_inv(x)*((ax-np.dot(Ja_diff(x).T,axx)))
 
 
     return aq
