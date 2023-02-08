@@ -221,7 +221,7 @@ F = sym.Matrix([fx,0,0, 0,0,0])
 
 qdd_ext_force = M_inv*(tau-(C+B+R)*qd - gv.T - Ja*F)
 
-Ja*M_inv*Ja.T
+#Ja.T*M_inv*Ja
 
 
 ######## ***************************************  

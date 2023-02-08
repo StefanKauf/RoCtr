@@ -35,15 +35,16 @@ def model_nlin(t,x,controller):
     q1,q2,q3,qd1,qd2,qd3  = x[0],x[1],x[2],x[3],x[4],x[5]
 
     if controller.ctr == 'multivariable':
-        u = ctr_multi_ext(t,x,controller,dx)                
+        u = ctr_multi_ext(t,x,controller,dx) 
+           
     else:
         u = controller.u        
         
-    u1,u2,u3 = u[0], u[1], u[2]  
     # Kraft aus Controller auslesen
-    fx = controller.fx  
-    x[9] = fx
-    
+    fx = controller.fx    
+    x[9] = fx     
+    u1,u2,u3 = u[0], u[1], u[2]  
+         
 
     dx[0] = qd1
     dx[1] = qd2
@@ -105,9 +106,10 @@ def ctr_multi_ext(t,x,ctr,dx):
     ''' Kraftregler'''
     # Anteil der externen Kraft
     if X[0,0]>ctr.xw:
-        fx = ctr.kf*(X[0,0]-ctr.xw)               
+        fx = ctr.kf*(X[0,0]-ctr.xw)                     
     else: 
-        fx = 0        
+        fx = 0   
+         
     ctr.fx = fx         # wird zum abpseichern benötigt --> Aufzeichnung 
     
     xdd = -ctr.kb*(X[0,1]- 0) - ctr.kd*(fx - ctr.fsoll)
@@ -283,8 +285,8 @@ def transform_J_to_K(x):
     qdd = np.array(x[6:9])
     
 
-    T0e = np.array([l1*cos(q1) + l2*cos(q1 + q2) + l_s3*cos(q1 + q2 + q3),
-                    l1*sin(q1) + l2*sin(q1 + q2) + l_s3*sin(q1 + q2 + q3)])
+    T0e = np.array([l1*cos(q1) + l2*cos(q1 + q2) + l3*cos(q1 + q2 + q3),
+                    l1*sin(q1) + l2*sin(q1 + q2) + l3*sin(q1 + q2 + q3)])
 
     qx[0] = T0e[0]                      # x    
     qx[1] = T0e[1]                      # y
